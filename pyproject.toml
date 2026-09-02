@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zafather"
+version = "0.4.0"
+description = "Telegram botlar uchun yengil async framework"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = ["aiohttp>=3.8"]
+optional-dependencies = { miniapp = ["cryptography>=41"] }
+keywords = ["telegram", "bot", "framework", "async", "zafather"]
+
+[project.scripts]
+zafather = "zafather.__main__:main"
+
+[tool.setuptools]
+packages = ["zafather"]

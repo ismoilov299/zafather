@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+zafather_state.json
+*.egg-info/
