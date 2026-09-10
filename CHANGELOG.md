@@ -10,7 +10,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
   PyPI Trusted Publishing orqali avtomatik nashr).
 - `CONTRIBUTING.md` — loyiha ochiq, PR va takliflar qabul qilinadi.
 - README: muallif (**ismoilov299**), hissa qo'shish va muhokama bo'limlari,
-  PyPI/Python/litsenziya badge'lari.
+  PyPI/Python/litsenziya badge'lari, "Buy Me A Coffee" qo'llab-quvvatlash.
+- `.github/FUNDING.yml` — GitHub Sponsor tugmasi.
 - `__author__`, `__license__` `zafather/__init__.py` da.
 
 ## [0.4.0]

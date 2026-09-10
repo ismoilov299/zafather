@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/zafather.svg)](https://pypi.org/project/zafather/)
 [![Python](https://img.shields.io/pypi/pyversions/zafather.svg)](https://pypi.org/project/zafather/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/ismoilov299)
 
 **Zafather** — Telegram botlar yozish uchun yengil, async va tashqi bog'liqliklari kam framework.
 Faqat bitta kutubxonaga (`aiohttp`) tayanadi, ichini o'qib tushunish oson.
@@ -545,6 +546,15 @@ Savol yoki muhokama uchun: [regnad299@gmail.com](mailto:regnad299@gmail.com).
 
 Barcha hissa qo'shuvchilar ro'yxati:
 [Contributors](https://github.com/ismoilov299/zafather/graphs/contributors).
+
+## Loyihani qo'llab-quvvatlash
+
+Zafather bepul va ochiq. Yoqqan bo'lsa:
+
+<a href="https://www.buymeacoffee.com/ismoilov299" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+       alt="Buy Me A Coffee" height="48" width="174">
+</a>
 
 ## Litsenziya
 
