@@ -3,3 +3,9 @@ __pycache__/
 .env
 zafather_state.json
 *.egg-info/
+build/
+dist/
+*.bundle
+.venv/
+venv/
+.serena/

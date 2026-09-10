@@ -105,7 +105,7 @@ from .types import (
     User,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 __bot_api__ = BOT_API_VERSION
 __author__ = "Zafather"
 

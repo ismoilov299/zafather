@@ -27,9 +27,15 @@ bot.run()
 ## O'rnatish
 
 ```bash
-pip install aiohttp
-# zafather papkasini loyihangiz yoniga qo'ying yoki:
-pip install -e .
+pip install zafather
+# Mini App'ning uchinchi-tomon (Ed25519) tekshiruvi kerak bo'lsa:
+pip install "zafather[miniapp]"
+```
+
+Repozitoriydan (ishlab chiqish uchun):
+
+```bash
+pip install -e ".[miniapp]"
 ```
 
 Yangi loyiha yaratish:

@@ -2,6 +2,13 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](https://semver.org/).
 
+## [0.4.1]
+### Qo'shildi
+- **PyPI nashri**: `pyproject.toml` to'ldirildi (classifiers, urls, authors),
+  `py.typed` (PEP 561), `MANIFEST.in`.
+- GitHub Actions: `ci.yml` (3.9–3.13 da testlar), `publish.yml` (tag qo'yilganda
+  PyPI Trusted Publishing orqali avtomatik nashr).
+
 ## [0.4.0]
 ### Qo'shildi
 - **Rich Messages** (Bot API 10.1/10.2): `RichMessage` HTML quruvchisi
