@@ -107,7 +107,8 @@ from .types import (
 
 __version__ = "0.4.1"
 __bot_api__ = BOT_API_VERSION
-__author__ = "Zafather"
+__author__ = "ismoilov299"
+__license__ = "MIT"
 
 __all__ = [
     # asosiy

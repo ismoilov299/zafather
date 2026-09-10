@@ -1,6 +1,7 @@
 include LICENSE
 include README.md
 include CHANGELOG.md
+include CONTRIBUTING.md
 include zafather/py.typed
 recursive-include examples *.py *.html
 exclude zafather.bundle

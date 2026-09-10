@@ -160,7 +160,9 @@ app.bot.call = fake
 | Redis storage | ❌ yo'q |
 | i18n (ko'p tillilik) | ❌ yo'q |
 | Checklist, so'rovnoma 2.0, business akkaunt, suggested posts | ❌ yo'q |
-| PyPI, CI, hujjat sayti | ❌ yo'q |
+| CI (GitHub Actions, 3.9–3.13) | ✅ tayyor (`.github/workflows/ci.yml`) |
+| PyPI nashri (Trusted Publishing, tag `v*`) | ✅ sozlangan (`publish.yml`) — birinchi tag kutilmoqda |
+| Hujjat sayti (mkdocs) | ❌ yo'q |
 
 ---
 

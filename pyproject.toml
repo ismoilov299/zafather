@@ -9,7 +9,7 @@ description = "Telegram botlar uchun yengil async framework (Bot API 10.2)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-authors = [{ name = "ismoilov299" }]
+authors = [{ name = "ismoilov299", email = "regnad299@gmail.com" }]
 keywords = ["telegram", "bot", "framework", "async", "zafather", "telegram-bot"]
 dependencies = ["aiohttp>=3.8"]
 

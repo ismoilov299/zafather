@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
   `py.typed` (PEP 561), `MANIFEST.in`.
 - GitHub Actions: `ci.yml` (3.9–3.13 da testlar), `publish.yml` (tag qo'yilganda
   PyPI Trusted Publishing orqali avtomatik nashr).
+- `CONTRIBUTING.md` — loyiha ochiq, PR va takliflar qabul qilinadi.
+- README: muallif (**ismoilov299**), hissa qo'shish va muhokama bo'limlari,
+  PyPI/Python/litsenziya badge'lari.
+- `__author__`, `__license__` `zafather/__init__.py` da.
 
 ## [0.4.0]
 ### Qo'shildi

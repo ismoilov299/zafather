@@ -1,7 +1,13 @@
 # Zafather
 
+[![PyPI](https://img.shields.io/pypi/v/zafather.svg)](https://pypi.org/project/zafather/)
+[![Python](https://img.shields.io/pypi/pyversions/zafather.svg)](https://pypi.org/project/zafather/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **Zafather** — Telegram botlar yozish uchun yengil, async va tashqi bog'liqliklari kam framework.
 Faqat bitta kutubxonaga (`aiohttp`) tayanadi, ichini o'qib tushunish oson.
+
+Muallif va yetakchi dasturchi — [**ismoilov299**](https://github.com/ismoilov299).
 
 **Bot API 10.2** (14-iyul, 2026) darajasida: rangli tugmalar, premium emoji,
 bot yaratadigan botlar, ephemeral xabarlar, guest mode, reaksiyalar, obunalar.
@@ -518,6 +524,28 @@ python test_miniapp.py      # Mini App: 21 ta test
 python test_rich.py         # Rich Messages: 23 ta test
 ```
 
+## Hissa qo'shish
+
+Loyiha **ochiq** — pull request va takliflar mamnuniyat bilan qabul qilinadi.
+
+- Xatolik yoki taklif: [Issues](https://github.com/ismoilov299/zafather/issues) da yozing.
+- Kod yubormoqchi bo'lsangiz:
+  1. Repozitoriyni fork qiling, alohida branch oching.
+  2. Har bir yangi imkoniyat uchun **test** yozing (`test_*.py` uslubida).
+  3. `python -m compileall -q zafather` va uchala test fayli o'tishini tekshiring.
+  4. Commit xabari: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` + o'zbekcha tavsif.
+  5. `main` ga pull request oching.
+- Kod konvensiyalari va arxitektura qarorlari [CLAUDE.md](CLAUDE.md) da batafsil.
+
+Savol yoki muhokama uchun: [regnad299@gmail.com](mailto:regnad299@gmail.com).
+
+## Muallif
+
+[**ismoilov299**](https://github.com/ismoilov299) — g'oya, arxitektura va asosiy kod.
+
+Barcha hissa qo'shuvchilar ro'yxati:
+[Contributors](https://github.com/ismoilov299/zafather/graphs/contributors).
+
 ## Litsenziya
 
-MIT — xohlagancha o'zgartiring va ishlating.
+MIT — xohlagancha o'zgartiring va ishlating. © 2026 ismoilov299.
