@@ -12,6 +12,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 - README: muallif (**ismoilov299**), hissa qo'shish va muhokama bo'limlari,
   PyPI/Python/litsenziya badge'lari, "Buy Me A Coffee" qo'llab-quvvatlash.
 - `.github/FUNDING.yml` — GitHub Sponsor tugmasi.
+
+### O'zgardi
+- `CLAUDE.md` git kuzatuvidan chiqarildi (lokal ishlab chiqish fayli);
+  hissa qo'shish qo'llanmasi to'liq `CONTRIBUTING.md` da.
 - `__author__`, `__license__` `zafather/__init__.py` da.
 
 ## [0.4.0]

@@ -23,7 +23,8 @@ qanday takrorlash mumkinligini, kutilgan va haqiqiy natijani yozing.
    ```
    Testlar soni kamaymasin.
 4. Yangi modul qo'shsangiz: `zafather/__init__.py` ga eksport + `__all__` ga
-   nom + README'da bo'lim + `CHANGELOG.md` ga qator.
+   nom + `README.md` da bo'lim + `CHANGELOG.md` ga qator + versiya ko'tarish
+   (`pyproject.toml` va `zafather/__init__.py` bir vaqtda).
 5. Commit xabari: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` + o'zbekcha
    tavsif. Har bir imkoniyat alohida commit.
 6. `main` ga pull request oching.
@@ -38,8 +39,9 @@ qanday takrorlash mumkinligini, kutilgan va haqiqiy natijani yozing.
   `cryptography` — ixtiyoriy).
 - Bot API maydon nomlarini taxmin qilib kodga qotirmang — noaniq bo'lsa
   `**params` orqali o'tkazing va docstring'da belgilang.
-
-Batafsil arxitektura qarorlari — [CLAUDE.md](CLAUDE.md).
+- `Bot.__getattr__` snake_case→camelCase, filtr `dict` qaytarsa handlerga
+  argument bo'ladi, `UNSET` sentinel `state=None` dan farqlanadi — mavjud
+  namunalarga qarab yozing.
 
 ## Muhokama
 

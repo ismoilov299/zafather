@@ -536,16 +536,13 @@ Loyiha **ochiq** — pull request va takliflar mamnuniyat bilan qabul qilinadi.
   3. `python -m compileall -q zafather` va uchala test fayli o'tishini tekshiring.
   4. Commit xabari: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` + o'zbekcha tavsif.
   5. `main` ga pull request oching.
-- Kod konvensiyalari va arxitektura qarorlari [CLAUDE.md](CLAUDE.md) da batafsil.
+- Kod konvensiyalari va arxitektura qarorlari [CONTRIBUTING.md](CONTRIBUTING.md) da.
 
 Savol yoki muhokama uchun: [regnad299@gmail.com](mailto:regnad299@gmail.com).
 
 ## Muallif
 
 [**ismoilov299**](https://github.com/ismoilov299) — g'oya, arxitektura va asosiy kod.
-
-Barcha hissa qo'shuvchilar ro'yxati:
-[Contributors](https://github.com/ismoilov299/zafather/graphs/contributors).
 
 ## Loyihani qo'llab-quvvatlash
 
