@@ -29,6 +29,7 @@ from zafather import (
     TLWriter,
     TLRequest,
     AbridgedTransport,
+    MTProtoSession,
     Update,
     UpdateType,
     UserBot,
@@ -456,6 +457,20 @@ async def main():
     await transport.send(b"abc")
     expect(received == b"x" and fake_writer.data == b"\xef\x01abc",
            "Abridged transport frames MTProto packets")
+
+    session_path = "test_mtproto_session.json"
+    session = MTProtoSession(session_path)
+    session.auth_key = b"auth-key"
+    session.dc_id = 2
+    session.server_salt = 123
+    session.user_id = 7
+    session.save()
+    loaded_session = MTProtoSession(session_path).load()
+    expect(loaded_session.auth_key == b"auth-key" and loaded_session.dc_id == 2
+           and loaded_session.server_salt == 123 and loaded_session.user_id == 7,
+           "MTProto session persists auth state")
+    loaded_session.clear()
+    expect(not loaded_session.path.exists(), "MTProto session clears credentials")
 
     class FakeEvents:
         class NewMessage:

@@ -56,6 +56,7 @@ from .filters import (
 from .fsm import BaseStorage, FSMContext, JSONStorage, MemoryStorage, State, StatesGroup
 from .i18n import I18n
 from .storage import RedisStorage
+from .session import MTProtoSession
 from .keyboards import (
     ForceReply,
     InlineKeyboard,
@@ -131,6 +132,7 @@ __all__ = [
     "MTProtoClient", "EventBuilder", "Events",
     "TLReader", "TLWriter", "TLRequest",
     "AbridgedTransport", "MTProtoTransportError",
+    "MTProtoSession",
     # UZ: tiplar / RU: типы / EN: types
     "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
     "TelegramObject", "ManagedBotUpdated", "BusinessConnection",

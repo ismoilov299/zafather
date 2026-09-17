@@ -8,6 +8,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Tuple
 
+from .session import MTProtoSession
 from .transport import AbridgedTransport
 
 
@@ -57,6 +58,7 @@ class MTProtoClient:
         self.api_id = api_id
         self.api_hash = api_hash
         self.session = session
+        self.session_state = MTProtoSession(session).load()
         if transport is None:
             transport = AbridgedTransport(
                 host=kwargs.pop("dc_host", "149.154.167.50"),

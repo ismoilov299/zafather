@@ -272,6 +272,8 @@ maxfiy saqlang; uni repositoryga qo'shmang. MTProto auth, encryption va TL schem
 qatlamlari mustaqil ravishda rivojlantirilmoqda; custom transport backendini
 `transport=` orqali ulash mumkin. Default transport MTProto Abridged TCP bo'lib,
 DC host/port `dc_host=` va `dc_port=` bilan almashtiriladi.
+Auth key, DC, server salt va user ID `MTProtoSession` orqali session faylida
+saqlanadi.
 
 ### 1. Handler e'lon qilish
 
