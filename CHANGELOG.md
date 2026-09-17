@@ -5,7 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 ## [Unreleased]
 ### Qo'shildi
 - Uch tilli hujjatlar boshlang'ich tuzilmasi: `docs/uz/`, `docs/ru/`, `docs/en/`.
-- Optional `UserBot` adapteri: Telethon orqali MTProto akkauntlar bilan ishlash.
+- Mustaqil `MTProtoClient` va Telethon'siz `UserBot` foundation.
+- TL binary `TLReader`, `TLWriter` va `TLRequest` builderlari.
 - `I18n` middleware: `language_code` asosida locale tanlash va tarjimalar.
 - Optional `RedisStorage`, Stars payments, `CallbackData` va middleware yordamchilari.
 - UserBot: credential validation, lifecycle helpers, event aliases va async context manager.
@@ -25,7 +26,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 
 ## [0.4.2]
 ### Qo'shildi
-- `UserBot` — Telethon uchun lazy-loaded MTProto adapteri va `userbot` optional extra.
+- `UserBot` — mustaqil MTProto client, retry/reconnect va event registry.
 
 ## [0.4.1]
 ### Qo'shildi

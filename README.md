@@ -57,7 +57,7 @@ bot.run()
 pip install zafather
 # Mini App'ning uchinchi-tomon (Ed25519) tekshiruvi kerak bo'lsa:
 pip install "zafather[miniapp]"
-# MTProto userbot kerak bo'lsa:
+# Mustaqil MTProto userbot kerak bo'lsa:
 pip install "zafather[userbot]"
 ```
 
@@ -86,7 +86,8 @@ python bot.py
 | `F` sehrli filtr | `F.text == "salom"`, `F.data.startswith("menu:")`, `~F.photo` |
 | FSM | `StatesGroup`, `State`, `FSMContext`, Memory/JSON storage |
 | **i18n** | `I18n` middleware, `language_code` asosida tarjimalar va fallback |
-| **Userbot** | Ixtiyoriy Telethon adapteri orqali MTProto akkauntlar bilan ishlash |
+| **Userbot** | Mustaqil MTProto client orqali akkauntlar bilan ishlash |
+| **TL protocol** | Telethon'siz TL binary serializer, request builder va reader |
 | Klaviaturalar | `InlineKeyboard`, `ReplyKeyboard`, `RemoveKeyboard`, `ForceReply` |
 | Middleware | Har bir update oldidan/keyin kod ishlatish |
 | To'liq API | Har qanday Telegram metodi: `bot.bot.any_method(...)` |
@@ -228,8 +229,8 @@ Handler kerak bo'lsa `locale` yoki `i18n` argumentlarini ham qabul qilishi mumki
 
 ### Userbot (MTProto)
 
-Bot API userbotlarga kira olmaydi, shuning uchun bu imkoniyat alohida ixtiyoriy
-`Telethon` adapteri orqali ishlaydi. O'rnatish: `pip install "zafather[userbot]"`.
+Bot API userbotlarga kira olmaydi, shuning uchun Zafather alohida mustaqil
+MTProto client beradi. O'rnatish: `pip install "zafather[userbot]"`.
 
 ```python
 from zafather import UserBot
@@ -251,18 +252,25 @@ Event decoratorlari uchun `on_new_message()` va `on_callback_query()` aliaslari,
 manual boshqaruv uchun `add_handler()` / `remove_handler()` ham mavjud. Sessionni
 avtomatik yopish uchun `async with UserBot(...) as userbot:` ishlatish mumkin.
 
-Telethon client API'sining qolgan metodlari ham to'g'ridan-to'g'ri ochiq:
-`userbot.get_messages(...)`, `userbot.send_file(...)`, `userbot.download_media(...)`.
-Universal chaqiruv yoki raw MTProto request uchun:
+Universal MTProto request uchun:
 
 ```python
-me = await userbot.call("get_me")
-result = await userbot.invoke(SomeTelethonRequest(...))
+result = await userbot.invoke(request)
+```
+
+TL requestlar uchun past darajadagi builderlar ham mavjud:
+
+```python
+from zafather import TLRequest
+
+request = TLRequest(0x12345678).int32(7).string("hello")
+result = await userbot.invoke(request.to_bytes())
 ```
 
 `api_id` va `api_hash` Telegram my.telegram.org saytidan olinadi. Session faylini
-maxfiy saqlang; uni repositoryga qo'shmang. Telethon o'rnatilmagan bo'lsa, oddiy
-Bot API qismi ishlashda davom etadi va `UserBot` ishlatilganda aniq xato beradi.
+maxfiy saqlang; uni repositoryga qo'shmang. MTProto auth, encryption va TL schema
+qatlamlari mustaqil ravishda rivojlantirilmoqda; custom transport backendini
+`transport=` orqali ulash mumkin.
 
 ### 1. Handler e'lon qilish
 

@@ -1,32 +1,30 @@
-"""UZ: MTProto userbot adapteri.
-RU: Адаптер userbot на базе MTProto.
-EN: MTProto userbot adapter.
+"""UZ: Mustaqil MTProto userbot API.
+RU: Независимый API userbot на MTProto.
+EN: Standalone MTProto userbot API.
 """
 from __future__ import annotations
 
+import asyncio
 import inspect
+import logging
 from typing import Any, Callable, Optional
+
+from .mtproto import Events, MTProtoClient
+
+log = logging.getLogger("zafather.userbot")
 
 
 class UserBot:
-    """UZ: Telethon asosidagi userbot klienti.
-    RU: Клиент userbot на базе Telethon.
-    EN: Telethon-based userbot client.
+    """UZ: Telethon'siz ishlaydigan MTProto userbot fasadi.
+    RU: Фасад userbot на MTProto без Telethon.
+    EN: Telethon-free MTProto userbot facade.
 
-    Telethon majburiy dependency emas. O'rnatish / Установка / Installation::
+    `transport` mustaqil auth, crypto va TL backendini ulaydi. UZ/RU/EN::
 
-        pip install zafather[userbot]
-
-    Misol / Пример / Example::
-
-        userbot = UserBot(12345, "api-hash", session="my-account")
-
-        @userbot.on_message(pattern="/hello")
+        userbot = UserBot(12345, "api-hash", transport=my_transport)
+        @userbot.on_new_message(pattern="/hello")
         async def hello(event):
             await event.respond("Salom!")
-
-        await userbot.start()
-        await userbot.run_until_disconnected()
     """
 
     def __init__(
@@ -36,99 +34,137 @@ class UserBot:
         session: str = "zafather_user",
         client: Any = None,
         events_module: Any = None,
+        transport: Any = None,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+        max_reconnects: int = 5,
+        reconnect_delay: float = 2.0,
+        backoff: float = 2.0,
         **kwargs: Any,
     ) -> None:
         if not isinstance(api_id, int) or api_id <= 0:
             raise ValueError("api_id musbat integer bo'lishi kerak")
         if not isinstance(api_hash, str) or not api_hash.strip():
             raise ValueError("api_hash bo'sh bo'lmasligi kerak")
+        if max_retries < 0 or max_reconnects < 0:
+            raise ValueError("max_retries va max_reconnects manfiy bo'lmasligi kerak")
+        if retry_delay < 0 or reconnect_delay < 0 or backoff < 1:
+            raise ValueError("delay manfiy emas, backoff esa kamida 1 bo'lishi kerak")
 
-        if client is None or events_module is None:
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.max_reconnects = max_reconnects
+        self.reconnect_delay = reconnect_delay
+        self.backoff = backoff
+        self.client = client or MTProtoClient(
+            api_id, api_hash, session=session, transport=transport, **kwargs
+        )
+        self.events = events_module or Events
+
+    @staticmethod
+    def _flood_wait_seconds(error: BaseException) -> Optional[float]:
+        if type(error).__name__ != "FloodWaitError":
+            return None
+        seconds = getattr(error, "seconds", None)
+        return float(seconds) if isinstance(seconds, (int, float)) else None
+
+    @staticmethod
+    def _is_connection_error(error: BaseException) -> bool:
+        return isinstance(error, (ConnectionError, OSError, asyncio.TimeoutError))
+
+    async def _sleep(self, delay: float) -> None:
+        if delay > 0:
+            await asyncio.sleep(delay)
+
+    async def _execute(self, operation: Callable[[], Any]) -> Any:
+        retries = 0
+        reconnects = 0
+        while True:
             try:
-                from telethon import TelegramClient, events
-            except ImportError as exc:
-                raise RuntimeError(
-                    "UserBot support requires the optional dependency 'telethon'. "
-                    "Install with: pip install zafather[userbot]"
-                ) from exc
-            if client is None:
-                client = TelegramClient(session, api_id, api_hash, **kwargs)
-            if events_module is None:
-                events_module = events
-
-        self.client = client
-        self.events = events_module
+                result = operation()
+                return await result if inspect.isawaitable(result) else result
+            except Exception as exc:  # noqa: BLE001
+                flood_wait = self._flood_wait_seconds(exc)
+                if flood_wait is not None:
+                    if retries >= self.max_retries:
+                        raise
+                    retries += 1
+                    log.warning("FloodWait: %ss kutilmoqda", flood_wait)
+                    await self._sleep(flood_wait)
+                    continue
+                if not self._is_connection_error(exc) or reconnects >= self.max_reconnects:
+                    raise
+                reconnects += 1
+                log.warning("UserBot reconnect %s/%s", reconnects, self.max_reconnects)
+                await self._sleep(self.reconnect_delay * (self.backoff ** (reconnects - 1)))
+                connect = getattr(self.client, "connect", None)
+                if connect is not None:
+                    result = connect()
+                    if inspect.isawaitable(result):
+                        await result
 
     def on(self, event_builder: Any) -> Callable:
-        """UZ/RU/EN: Telethon event builder uchun umumiy decorator."""
         return self.client.on(event_builder)
 
     def on_message(self, *args: Any, **kwargs: Any) -> Callable:
-        """UZ/RU/EN: Yangi xabarlar uchun handler decoratori."""
         return self.client.on(self.events.NewMessage(*args, **kwargs))
 
     def on_callback(self, *args: Any, **kwargs: Any) -> Callable:
-        """UZ/RU/EN: Callback query lar uchun handler decoratori."""
         return self.client.on(self.events.CallbackQuery(*args, **kwargs))
 
     def on_new_message(self, *args: Any, **kwargs: Any) -> Callable:
-        """UZ/RU/EN: `on_message()` ning aniq nomlangan aliasi."""
         return self.on_message(*args, **kwargs)
 
     def on_callback_query(self, *args: Any, **kwargs: Any) -> Callable:
-        """UZ/RU/EN: `on_callback()` ning aniq nomlangan aliasi."""
         return self.on_callback(*args, **kwargs)
 
     async def start(self, phone: Optional[str] = None, **kwargs: Any) -> Any:
-        """UZ/RU/EN: Userbot sessiyasini ishga tushiradi."""
-        if phone is None:
-            return await self.client.start(**kwargs)
-        return await self.client.start(phone=phone, **kwargs)
+        if phone is not None:
+            kwargs["phone"] = phone
+        return await self._execute(lambda: self.client.start(**kwargs))
 
     async def run_until_disconnected(self) -> Any:
-        """UZ/RU/EN: Userbot uzilguncha event loop'ni kutadi."""
-        return await self.client.run_until_disconnected()
+        reconnects = 0
+        while True:
+            try:
+                return await self.client.run_until_disconnected()
+            except Exception as exc:  # noqa: BLE001
+                if not self._is_connection_error(exc) or reconnects >= self.max_reconnects:
+                    raise
+                reconnects += 1
+                await self._sleep(self.reconnect_delay * (self.backoff ** (reconnects - 1)))
+                connect = getattr(self.client, "connect", None)
+                if connect is not None:
+                    result = connect()
+                    if inspect.isawaitable(result):
+                        await result
 
     async def run(self) -> Any:
-        """UZ/RU/EN: Userbotni ishga tushirib, uzilguncha kutadi."""
         await self.start()
         return await self.run_until_disconnected()
 
     async def disconnect(self) -> None:
-        """UZ/RU/EN: Userbot sessiyasini yopadi."""
-        await self.client.disconnect()
+        result = self.client.disconnect()
+        if inspect.isawaitable(result):
+            await result
 
     async def send_message(self, entity: Any, message: Any, **kwargs: Any) -> Any:
-        """UZ/RU/EN: User nomidan xabar yuboradi."""
-        return await self.client.send_message(entity, message, **kwargs)
+        return await self._execute(lambda: self.client.send_message(entity, message, **kwargs))
 
     async def call(self, method: Any, *args: Any, **kwargs: Any) -> Any:
-        """UZ: Istalgan Telethon client metodini nomi yoki callable orqali chaqiradi.
-        RU: Вызывает любой метод клиента Telethon по имени или callable.
-        EN: Calls any Telethon client method by name or callable.
-        """
         target = getattr(self.client, method) if isinstance(method, str) else method
-        result = target(*args, **kwargs)
-        return await result if inspect.isawaitable(result) else result
+        return await self._execute(lambda: target(*args, **kwargs))
 
     async def request(self, method: Any, *args: Any, **kwargs: Any) -> Any:
-        """UZ/RU/EN: `call()` ning request-uslubidagi aliasi."""
         return await self.call(method, *args, **kwargs)
 
-    async def invoke(self, request: Any) -> Any:
-        """UZ: Telethon raw MTProto request obyektini bajaradi.
-        RU: Выполняет сырой объект MTProto-запроса Telethon.
-        EN: Executes a raw Telethon MTProto request object.
-        """
-        result = self.client(request)
-        return await result if inspect.isawaitable(result) else result
+    async def invoke(self, request: Any, *args: Any, **kwargs: Any) -> Any:
+        return await self._execute(lambda: self.client(request, *args, **kwargs))
 
     def add_handler(self, callback: Callable, event_builder: Any) -> Any:
-        """UZ/RU/EN: Tayyor handlerni clientga qo'shadi."""
         return self.client.add_event_handler(callback, event_builder)
 
     def remove_handler(self, callback: Callable, event_builder: Any = None) -> Any:
-        """UZ/RU/EN: Handlerni clientdan olib tashlaydi."""
         return self.client.remove_event_handler(callback, event_builder)
 
     async def __aenter__(self) -> "UserBot":
@@ -136,9 +172,7 @@ class UserBot:
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:
-        result = self.disconnect()
-        if inspect.isawaitable(result):
-            await result
+        await self.disconnect()
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):

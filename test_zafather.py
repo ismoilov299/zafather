@@ -25,6 +25,9 @@ from zafather import (
     StatesGroup,
     TextBuilder,
     ThrottlingMiddleware,
+    TLReader,
+    TLWriter,
+    TLRequest,
     Update,
     UpdateType,
     UserBot,
@@ -400,12 +403,20 @@ async def main():
     expect(len(album_events) >= 1 and len(album_events[0]) >= 2,
            "AlbumMiddleware groups media with the same media_group_id")
 
-    try:
-        userbot = UserBot(api_id=12345, api_hash="test-hash", session="test-session")
-        userbot_ok = userbot.client is not None
-    except RuntimeError as exc:
-        userbot_ok = "telethon" in str(exc).lower()
-    expect(userbot_ok, "UserBot uses optional Telethon support")
+    userbot = UserBot(api_id=12345, api_hash="test-hash", session="test-session")
+    expect(userbot.client is not None and userbot.client.__class__.__name__ == "MTProtoClient",
+           "UserBot uses the independent MTProto client")
+
+    writer = TLWriter()
+    writer.int32(-42).int64(9876543210).string("salom").bytes(b"abc")
+    decoded = TLReader(writer.to_bytes())
+    expect(decoded.int32() == -42 and decoded.int64() == 9876543210,
+           "TL serializer encodes signed integers")
+    expect(decoded.string() == "salom" and decoded.bytes() == b"abc",
+           "TL serializer encodes strings and bytes")
+    request = TLRequest(0x12345678).int32(7).string("hello").to_bytes()
+    expect(request[:4] == b"xV4\x12" and len(request) == 16,
+           "TLRequest serializes constructor and fields")
 
     class FakeEvents:
         class NewMessage:
@@ -450,6 +461,28 @@ async def main():
         async def __call__(self, request):
             return {"request": request}
 
+    class FloodWaitError(Exception):
+        def __init__(self, seconds):
+            super().__init__(f"A wait of {seconds} seconds is required")
+            self.seconds = seconds
+
+    class RetryClient(FakeClient):
+        def __init__(self):
+            super().__init__()
+            self.attempts = 0
+            self.reconnects = 0
+
+        async def get_me(self):
+            self.attempts += 1
+            if self.attempts == 1:
+                raise FloodWaitError(0)
+            if self.attempts == 2:
+                raise ConnectionError("temporary disconnect")
+            return {"username": "recovered"}
+
+        async def connect(self):
+            self.reconnects += 1
+
     fake_client = FakeClient()
     test_userbot = UserBot(
         api_id=1, api_hash="hash", client=fake_client, events_module=FakeEvents
@@ -469,6 +502,20 @@ async def main():
     expect(called["username"] == "test", "UserBot calls any client API method by name")
     invoked = await test_userbot.invoke("raw-request")
     expect(invoked["request"] == "raw-request", "UserBot invokes raw MTProto requests")
+    retry_client = RetryClient()
+    retry_userbot = UserBot(
+        api_id=1,
+        api_hash="hash",
+        client=retry_client,
+        events_module=FakeEvents,
+        max_retries=3,
+        retry_delay=0,
+        max_reconnects=2,
+        reconnect_delay=0,
+    )
+    recovered = await retry_userbot.call("get_me")
+    expect(recovered["username"] == "recovered" and retry_client.attempts == 3,
+           "UserBot retries FloodWait and transient connection errors")
     invalid_userbot = False
     try:
         UserBot(api_id=0, api_hash="hash", client=fake_client, events_module=FakeEvents)

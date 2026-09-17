@@ -66,6 +66,7 @@ from .keyboards import (
 from .magic import F
 from .managed import BotFarm, ManagedBots
 from .middlewares import AlbumMiddleware, ChatActionMiddleware, ThrottlingMiddleware
+from .mtproto import EventBuilder, Events, MTProtoClient
 from .payments import Invoice, LabeledPrice, StarsAPI
 from .rich import RichMessage, RichStream, markdown_rich
 from .router import Router, SkipHandler
@@ -86,6 +87,7 @@ from .text import (
     strip_custom_emoji,
     underline,
 )
+from .tl import TLReader, TLRequest, TLWriter
 from .webapp import (
     MiniApp,
     WebAppAuthError,
@@ -125,6 +127,8 @@ __license__ = "MIT"
 __all__ = [
     # UZ: asosiy / RU: основные / EN: core
     "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
+    "MTProtoClient", "EventBuilder", "Events",
+    "TLReader", "TLWriter", "TLRequest",
     # UZ: tiplar / RU: типы / EN: types
     "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
     "TelegramObject", "ManagedBotUpdated", "BusinessConnection",
