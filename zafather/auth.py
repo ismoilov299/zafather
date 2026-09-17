@@ -10,6 +10,7 @@ import hashlib
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
+from .session import MTProtoSession
 from .tl import TLReader, TLRequest
 
 
@@ -84,6 +85,24 @@ class ResPQ:
     fingerprints: List[int]
 
 
+@dataclass(frozen=True)
+class ServerDHParamsOk:
+    """UZ/RU/EN: Telegram `server_DH_params_ok` javobi."""
+
+    nonce: bytes
+    server_nonce: bytes
+    encrypted_answer: bytes
+
+
+@dataclass(frozen=True)
+class DHGenOk:
+    """UZ/RU/EN: Telegram `dh_gen_ok` javobi."""
+
+    nonce: bytes
+    server_nonce: bytes
+    new_nonce_hash1: bytes
+
+
 class AuthHandshake:
     """UZ: Auth handshake'ning `req_pq` va `resPQ` bosqichi.
     RU: Этапы `req_pq` и `resPQ` auth handshake.
@@ -98,6 +117,7 @@ class AuthHandshake:
         self.nonce = nonce or secrets.token_bytes(16)
         if len(self.nonce) != 16:
             raise ValueError("MTProto nonce aynan 16 bayt bo'lishi kerak")
+        self.server_nonce: Optional[bytes] = None
 
     def build_req_pq(self) -> bytes:
         return TLRequest(self.REQ_PQ).raw(self.nonce).to_bytes()
@@ -134,9 +154,67 @@ class AuthHandshake:
         if nonce != self.nonce:
             raise ValueError("MTProto nonce mos kelmadi")
         server_nonce = reader.raw(16)
+        self.server_nonce = server_nonce
         pq_bytes = reader.bytes()
         fingerprints = reader.vector("int64")
         return ResPQ(nonce, server_nonce, int.from_bytes(pq_bytes, "big"), fingerprints)
+
+    def parse_server_dh_params_ok(
+        self, payload: bytes, server_nonce: bytes
+    ) -> ServerDHParamsOk:
+        reader = TLReader(payload)
+        if reader.uint32() != 0xD0E8075C:
+            raise ValueError("server_DH_params_ok constructori noto'g'ri")
+        nonce = reader.raw(16)
+        if nonce != self.nonce or server_nonce != reader.raw(16):
+            raise ValueError("MTProto DH nonce mos kelmadi")
+        return ServerDHParamsOk(nonce, server_nonce, reader.bytes())
+
+    @staticmethod
+    def derive_auth_key(shared_secret: int) -> bytes:
+        if shared_secret <= 0:
+            raise ValueError("DH shared secret musbat bo'lishi kerak")
+        try:
+            return shared_secret.to_bytes(256, "big")
+        except OverflowError as exc:
+            raise ValueError("DH shared secret 2048-bitdan oshib ketdi") from exc
+
+    @staticmethod
+    def new_nonce_hash1(new_nonce: bytes, auth_key: bytes) -> bytes:
+        if len(new_nonce) != 16 or len(auth_key) != 256:
+            raise ValueError("new_nonce 16 bayt, auth_key 256 bayt bo'lishi kerak")
+        return hashlib.sha1(new_nonce + auth_key).digest()[4:20]
+
+    def parse_dh_gen_ok(self, payload: bytes, server_nonce: bytes) -> DHGenOk:
+        reader = TLReader(payload)
+        if reader.uint32() != 0x3BCBF734:
+            raise ValueError("dh_gen_ok constructori noto'g'ri")
+        nonce = reader.raw(16)
+        response_server_nonce = reader.raw(16)
+        if nonce != self.nonce or response_server_nonce != server_nonce:
+            raise ValueError("MTProto dh_gen_ok nonce mos kelmadi")
+        new_nonce_hash1 = reader.raw(16)
+        return DHGenOk(nonce, response_server_nonce, new_nonce_hash1)
+
+    def complete_dh_gen(
+        self,
+        payload: bytes,
+        server_nonce: bytes,
+        new_nonce: bytes,
+        shared_secret: int,
+        session: Optional[MTProtoSession] = None,
+    ) -> bytes:
+        auth_key = self.derive_auth_key(shared_secret)
+        result = self.parse_dh_gen_ok(payload, server_nonce)
+        if result.new_nonce_hash1 != self.new_nonce_hash1(new_nonce, auth_key):
+            raise ValueError("MTProto new_nonce_hash1 tekshiruvi muvaffaqiyatsiz")
+        if session is not None:
+            session.auth_key = auth_key
+            session.server_salt = int.from_bytes(new_nonce[:8], "little") ^ int.from_bytes(
+                server_nonce[:8], "little"
+            )
+            session.save()
+        return auth_key
 
     @staticmethod
     def _is_prime(value: int) -> bool:
@@ -200,4 +278,4 @@ class AuthHandshake:
         return factors[0], factors[1]
 
 
-__all__ = ["AuthHandshake", "ResPQ"]
+__all__ = ["AuthHandshake", "ResPQ", "ServerDHParamsOk", "DHGenOk", "RSAPublicKey", "DHExchange"]

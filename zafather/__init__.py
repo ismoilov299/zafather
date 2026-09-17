@@ -23,7 +23,7 @@ bots that create bots, ephemeral messages, guest mode, reactions, subscriptions.
 """
 
 from .app import Zafather
-from .auth import AuthHandshake, DHExchange, RSAPublicKey, ResPQ
+from .auth import AuthHandshake, DHExchange, DHGenOk, RSAPublicKey, ResPQ, ServerDHParamsOk
 from .bot import Bot, InputFile, NetworkError, TelegramError
 from .callback_data import CallbackData
 from .crypto import AuthKey
@@ -133,6 +133,7 @@ __all__ = [
     "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
     "MTProtoClient", "EventBuilder", "Events",
     "AuthKey", "AuthHandshake", "ResPQ", "RSAPublicKey", "DHExchange",
+    "ServerDHParamsOk", "DHGenOk",
     "TLReader", "TLWriter", "TLRequest",
     "AbridgedTransport", "MTProtoTransportError",
     "MTProtoSession",

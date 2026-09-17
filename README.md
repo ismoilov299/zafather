@@ -284,7 +284,9 @@ Auth handshake’ning boshlang'ich bosqichi `AuthHandshake` orqali mavjud:
 `req_pq` yaratish, `resPQ` parse qilish va `pq` ni faktorlash.
 RSA fingerprint/PKCS#1 encryption, DH public value va shared secret uchun
 `RSAPublicKey` hamda `DHExchange` mavjud; `req_DH_params` builderi ham shu
-handshake qatlamiga kiradi.
+handshake qatlamiga kiradi. `server_DH_params_ok` va `dh_gen_ok` javoblari
+parse qilinadi, `new_nonce_hash1` tekshiriladi va tayyor auth key session’ga
+saqlanadi.
 
 ### 1. Handler e'lon qilish
 

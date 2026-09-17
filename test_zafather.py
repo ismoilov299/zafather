@@ -32,6 +32,8 @@ from zafather import (
     MTProtoSession,
     AuthKey,
     AuthHandshake,
+    ServerDHParamsOk,
+    DHGenOk,
     DHExchange,
     RSAPublicKey,
     Update,
@@ -513,6 +515,27 @@ async def main():
            "MTProto DH derives the same shared secret")
     expect(DHExchange.validate_params(23, 5, peer.public_value),
            "MTProto DH validates group parameters")
+    dh_ok_writer = TLWriter().uint32(0xD0E8075C)
+    dh_ok_writer.raw(b"0123456789abcdef").raw(b"fedcba9876543210").bytes(b"answer")
+    dh_ok = handshake.parse_server_dh_params_ok(dh_ok_writer.to_bytes(), b"fedcba9876543210")
+    expect(isinstance(dh_ok, ServerDHParamsOk) and dh_ok.encrypted_answer == b"answer",
+           "MTProto auth parses server_DH_params_ok")
+    new_nonce = b"new-nonce-123456"
+    derived_key = handshake.derive_auth_key(dh.shared_secret(peer.public_value))
+    new_nonce_hash = handshake.new_nonce_hash1(new_nonce, derived_key)
+    dh_gen_writer = TLWriter().uint32(0x3BCBF734)
+    dh_gen_writer.raw(b"0123456789abcdef").raw(b"fedcba9876543210").raw(new_nonce_hash)
+    dh_gen = handshake.parse_dh_gen_ok(dh_gen_writer.to_bytes(), b"fedcba9876543210")
+    expect(isinstance(dh_gen, DHGenOk) and dh_gen.new_nonce_hash1 == new_nonce_hash,
+           "MTProto auth parses dh_gen_ok")
+    auth_session = MTProtoSession("test_auth_session.json")
+    completed_key = handshake.complete_dh_gen(
+        dh_gen_writer.to_bytes(), b"fedcba9876543210", new_nonce,
+        dh.shared_secret(peer.public_value), auth_session
+    )
+    expect(auth_session.auth_key == completed_key and auth_session.server_salt is not None,
+           "MTProto auth saves completed key and server salt")
+    auth_session.clear()
 
     class FakeEvents:
         class NewMessage:
