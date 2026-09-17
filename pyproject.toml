@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zafather"
 version = "0.4.1"
-description = "Telegram botlar uchun yengil async framework (Bot API 10.2)"
+description = "Lightweight async Telegram bot framework | Yengil async Telegram bot framework | Легкий async-фреймворк для Telegram-ботов"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }

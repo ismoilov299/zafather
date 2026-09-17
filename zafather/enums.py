@@ -1,25 +1,39 @@
-"""Zafather — Bot API 10.2 konstantalari."""
+"""UZ: Zafather — Bot API 10.3 konstantalari.
+RU: Zafather — константы Bot API 10.3.
+EN: Zafather — Bot API 10.3 constants.
+"""
 from __future__ import annotations
 
 
 class ButtonStyle:
-    """Tugma rangi (Bot API 9.4+). InlineKeyboardButton va KeyboardButton uchun."""
+    """UZ: Tugma rangi (Bot API 9.4+). InlineKeyboardButton va KeyboardButton uchun.
+    RU: Цвет кнопки (Bot API 9.4+). Для InlineKeyboardButton и KeyboardButton.
+    EN: Button color (Bot API 9.4+). For InlineKeyboardButton and KeyboardButton.
+    """
 
-    PRIMARY = "primary"   # ko'k — asosiy amal
-    SUCCESS = "success"   # yashil — ijobiy amal
-    DANGER = "danger"     # qizil — xavfli/o'chiruvchi amal
+    PRIMARY = "primary"   # UZ: ko'k — asosiy amal / RU: синий — основное действие / EN: blue — primary action
+    SUCCESS = "success"   # UZ: yashil — ijobiy amal / RU: зелёный — положительное действие / EN: green — positive action
+    DANGER = "danger"     # UZ: qizil — xavfli/o'chiruvchi amal / RU: красный — опасное/удаляющее действие / EN: red — destructive action
 
     ALL = (PRIMARY, SUCCESS, DANGER)
 
 
 class ParseMode:
+    """UZ: Xabar parse_mode qiymatlari.
+    RU: Значения parse_mode для сообщений.
+    EN: Message parse_mode values.
+    """
+
     HTML = "HTML"
     MARKDOWN_V2 = "MarkdownV2"
     MARKDOWN = "Markdown"
 
 
 class UpdateType:
-    """Bot API 10.2 dagi barcha update turlari."""
+    """UZ: Bot API 10.3 dagi barcha update turlari.
+    RU: Все типы update из Bot API 10.3.
+    EN: All update types from Bot API 10.3.
+    """
 
     MESSAGE = "message"
     EDITED_MESSAGE = "edited_message"
@@ -44,9 +58,13 @@ class UpdateType:
     CHAT_JOIN_REQUEST = "chat_join_request"
     CHAT_BOOST = "chat_boost"
     REMOVED_CHAT_BOOST = "removed_chat_boost"
-    GUEST_MESSAGE = "guest_message"          # 10.0 — guest mode
-    MANAGED_BOT = "managed_bot"              # 9.6 — bot yaratadigan botlar
-    SUBSCRIPTION = "subscription"            # 10.2 — obuna o'zgarishi
+    GUEST_MESSAGE = "guest_message"          # UZ: 10.0 — mehmon rejimi / RU: 10.0 — гостевой режим / EN: 10.0 — guest mode
+    MANAGED_BOT = "managed_bot"              # UZ: 9.6 — bot yaratadigan botlar / RU: 9.6 — боты, создающие ботов / EN: 9.6 — bots that create bots
+    SUBSCRIPTION = "subscription"            # UZ: 10.2 — obuna o'zgarishi / RU: 10.2 — изменение подписки / EN: 10.2 — subscription change
+    # UZ: foydalanuvchi rich/message generatsiyasini to'xtatdi.
+    # RU: пользователь остановил генерацию rich/message.
+    # EN: the user stopped rich/message generation.
+    STOPPED_MESSAGE_GENERATION = "stopped_message_generation"
 
     ALL = (
         MESSAGE,
@@ -75,11 +93,16 @@ class UpdateType:
         GUEST_MESSAGE,
         MANAGED_BOT,
         SUBSCRIPTION,
+        STOPPED_MESSAGE_GENERATION,
     )
 
 
 class ContentType:
-    """Message ichidagi kontent maydonlari."""
+    """
+    UZ: Message ichidagi kontent maydonlari.
+    RU: Поля контента внутри Message.
+    EN: Content fields inside a Message.
+    """
 
     TEXT = "text"
     PHOTO = "photo"
@@ -115,6 +138,7 @@ class ContentType:
     SUGGESTED_POST_INFO = "suggested_post_info"          # 9.2
     COMMUNITY_CHAT_ADDED = "community_chat_added"        # 10.2
     COMMUNITY_CHAT_REMOVED = "community_chat_removed"    # 10.2
+    COMMUNITY_CHAT_JOINED = "community_chat_joined"      # 10.3
     CHAT_OWNER_CHANGED = "chat_owner_changed"            # 9.4
     CHAT_OWNER_LEFT = "chat_owner_left"                  # 9.4
 
@@ -122,6 +146,11 @@ class ContentType:
 
 
 class ChatAction:
+    """UZ: sendChatAction uchun harakat turlari.
+    RU: Типы действий для sendChatAction.
+    EN: Action types for sendChatAction.
+    """
+
     TYPING = "typing"
     UPLOAD_PHOTO = "upload_photo"
     RECORD_VIDEO = "record_video"
@@ -136,6 +165,11 @@ class ChatAction:
 
 
 class ChatTypeEnum:
+    """UZ: Chat turlari.
+    RU: Типы чатов.
+    EN: Chat types.
+    """
+
     PRIVATE = "private"
     GROUP = "group"
     SUPERGROUP = "supergroup"
@@ -144,6 +178,11 @@ class ChatTypeEnum:
 
 
 class DiceEmoji:
+    """UZ: sendDice uchun emoji qiymatlari.
+    RU: Значения emoji для sendDice.
+    EN: Emoji values for sendDice.
+    """
+
     DICE = "🎲"
     DART = "🎯"
     BASKETBALL = "🏀"
@@ -153,13 +192,25 @@ class DiceEmoji:
 
 
 class Currency:
+    """UZ: To'lov valyutalari.
+    RU: Валюты платежей.
+    EN: Payment currencies.
+    """
+
     STARS = "XTR"  # Telegram Stars
 
 
 class PollType:
+    """UZ: So'rovnoma turlari.
+    RU: Типы опросов.
+    EN: Poll types.
+    """
+
     REGULAR = "regular"
     QUIZ = "quiz"
 
 
-#: Bot API versiyasi, ushbu framework mos keladigan
-BOT_API_VERSION = "10.2"
+#: UZ: Ushbu framework mos keladigan Bot API versiyasi.
+#: RU: Версия Bot API, которую поддерживает этот фреймворк.
+#: EN: Bot API version supported by this framework.
+BOT_API_VERSION = "10.3"

@@ -1,4 +1,7 @@
-"""Zafather — Router (handlerlarni guruhlash va yo'naltirish)."""
+"""UZ: Zafather — Router (handlerlarni guruhlash va yo'naltirish).
+RU: Zafather — Router (группировка и маршрутизация handlers).
+EN: Zafather — Router (grouping and routing handlers).
+"""
 from __future__ import annotations
 
 import inspect
@@ -12,7 +15,10 @@ log = logging.getLogger("zafather.router")
 
 
 class _Unset:
-    """`state` ko'rsatilmaganini bildiruvchi sentinel (state=None dan farqli)."""
+    """UZ: `state` ko'rsatilmaganini bildiruvchi sentinel (state=None dan farqli).
+    RU: Sentinel, обозначающий, что `state` не указан (отличается от `state=None`).
+    EN: Sentinel meaning `state` was not specified (distinct from `state=None`).
+    """
 
     def __repr__(self) -> str:
         return "UNSET"
@@ -29,7 +35,10 @@ _sig_cache: Dict[int, Any] = {}
 
 
 async def call_handler(callback: Callable, event, data: dict):
-    """Handler faqat o'zi so'ragan argumentlarni oladi."""
+    """UZ: Handler faqat o'zi so'ragan argumentlarni oladi.
+    RU: Handler получает только те аргументы, которые ему нужны.
+    EN: The handler receives only the arguments it needs.
+    """
     key = id(callback)
     info = _sig_cache.get(key)
     if info is None:
@@ -69,11 +78,17 @@ class Handler:
 
 
 class SkipHandler(Exception):
-    """Handler ichida ko'tarilsa — keyingi handlerga o'tiladi."""
+    """UZ: Handler ichida ko'tarilsa — keyingi handlerga o'tiladi.
+    RU: Если выброшено внутри handler, управление переходит к следующему handler.
+    EN: If raised inside a handler, execution skips to the next handler.
+    """
 
 
 class Router:
-    """Handlerlar to'plami. Modul bo'yicha ajratish uchun ishlatiladi."""
+    """UZ: Handlerlar to'plami. Modul bo'yicha ajratish uchun ishlatiladi.
+    RU: Набор handlers. Используется для разделения по модулям.
+    EN: A collection of handlers. Used to split logic by module.
+    """
 
     def __init__(self, name: str = "router") -> None:
         self.name = name
@@ -150,6 +165,13 @@ class Router:
     def subscription(self, *filters, **flags) -> Callable:
         """Foydalanuvchi obunasi o'zgardi (Bot API 10.2+)."""
         return self.on(UpdateType.SUBSCRIPTION, *filters, **flags)
+
+    def stopped_generation(self, *filters, **flags) -> Callable:
+        """UZ: `stopped_message_generation` update'i uchun handler ro'yxatga oladi.
+        RU: Регистрирует handler для update `stopped_message_generation`.
+        EN: Registers a handler for the `stopped_message_generation` update.
+        """
+        return self.on(UpdateType.STOPPED_MESSAGE_GENERATION, *filters, **flags)
 
     def business_message(self, *filters, **flags) -> Callable:
         return self.on(UpdateType.BUSINESS_MESSAGE, *filters, **flags)

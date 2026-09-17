@@ -1,4 +1,7 @@
-"""Zafather — Telegram Bot API klienti."""
+"""UZ: Zafather — Telegram Bot API klienti.
+RU: Zafather — клиент Telegram Bot API.
+EN: Zafather — Telegram Bot API client.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -13,7 +16,9 @@ from .types import Message, TelegramObject, Update, User
 
 log = logging.getLogger("zafather.bot")
 
-#: Matn yuboradigan metodlar — ularga parse_mode avtomatik qo'shiladi
+#: UZ: Matn yuboradigan metodlar — ularga parse_mode avtomatik qo'shiladi.
+#: RU: Методы отправки текста — к ним автоматически добавляется parse_mode.
+#: EN: Text-sending methods — parse_mode is attached to them automatically.
 _PARSE_MODE_METHODS = {
     "sendMessage",
     "sendPhoto",
@@ -29,7 +34,10 @@ _PARSE_MODE_METHODS = {
 
 
 class TelegramError(Exception):
-    """Telegram API xatosi."""
+    """UZ: Telegram API xatosi.
+    RU: Ошибка Telegram API.
+    EN: Telegram API error.
+    """
 
     def __init__(self, method: str, code: int, description: str, parameters: dict = None):
         self.method = method
@@ -40,11 +48,16 @@ class TelegramError(Exception):
 
 
 class NetworkError(Exception):
-    """Tarmoq bilan bog'liq xato."""
+    """UZ: Tarmoq bilan bog'liq xato.
+    RU: Ошибка, связанная с сетью.
+    EN: Network-related error.
+    """
 
 
 class InputFile:
-    """Lokal fayl yoki baytlarni yuklash uchun.
+    """UZ: Lokal fayl yoki baytlarni yuklash uchun.
+    RU: Для загрузки локального файла или байтов.
+    EN: For uploading a local file or raw bytes.
 
         await m.answer_photo(InputFile("rasm.jpg"))
     """
@@ -71,9 +84,13 @@ def _to_camel(name: str) -> str:
 
 
 class Bot:
-    """Telegram Bot API bilan muloqot qiladigan klient.
+    """UZ: Telegram Bot API bilan muloqot qiladigan klient.
+    RU: Клиент для работы с Telegram Bot API.
+    EN: Client that talks to the Telegram Bot API.
 
-    Har qanday API metodini snake_case ko'rinishida chaqirish mumkin::
+    UZ: Har qanday API metodini snake_case ko'rinishida chaqirish mumkin.
+    RU: Любой метод API можно вызывать в виде snake_case.
+    EN: Any API method can be called in snake_case form.::
 
         await bot.send_message(chat_id=1, text="salom")   -> sendMessage
         await bot.get_chat_member(chat_id=1, user_id=2)   -> getChatMember
@@ -95,7 +112,7 @@ class Bot:
         self._session: Optional[aiohttp.ClientSession] = None
         self._me: Optional[User] = None
 
-    # --- sessiya --------------------------------------------------------------
+    # --- UZ: sessiya / RU: сессия / EN: session --------------------------------
     async def session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
             self._session = aiohttp.ClientSession(
@@ -107,7 +124,7 @@ class Bot:
         if self._session and not self._session.closed:
             await self._session.close()
 
-    # --- so'rov yuborish ------------------------------------------------------
+    # --- UZ: so'rov yuborish / RU: отправка запроса / EN: sending a request ---
     def _prepare(self, method: str, params: dict) -> tuple[dict, dict]:
         payload, files = {}, {}
         for key, value in params.items():
@@ -126,7 +143,10 @@ class Bot:
         return payload, files
 
     async def call(self, method: str, **params) -> Any:
-        """API metodini chaqirish (xom natija bilan)."""
+        """UZ: API metodini chaqirish (xom natija bilan).
+        RU: Вызов метода API (с сырым результатом).
+        EN: Call an API method (returns the raw result).
+        """
         url = f"{self.api_url}/bot{self.token}/{method}"
         payload, files = self._prepare(method, params)
         session = await self.session()
@@ -172,7 +192,7 @@ class Bot:
 
         raise NetworkError(f"{method}: barcha urinishlar muvaffaqiyatsiz")
 
-    # --- natijani modelga o'rash ---------------------------------------------
+    # --- UZ: natijani modelga o'rash / RU: обертка результата в модель / EN: wrap result ---
     def _wrap(self, result: Any) -> Any:
         if isinstance(result, dict):
             if "message_id" in result and "chat" in result:
@@ -187,11 +207,17 @@ class Bot:
         return result
 
     async def request(self, method: str, **params) -> Any:
-        """API metodini chaqirib, natijani modelga o'raydi."""
+        """UZ: API metodini chaqirib, natijani modelga o'raydi.
+        RU: Вызывает метод API и оборачивает результат в модель.
+        EN: Calls an API method and wraps the result in a model.
+        """
         return self._wrap(await self.call(method, **params))
 
     def __getattr__(self, name: str):
-        """bot.send_message(...) -> sendMessage. Barcha API metodlari ishlaydi."""
+        """UZ: bot.send_message(...) -> sendMessage. Barcha API metodlari ishlaydi.
+        RU: bot.send_message(...) -> sendMessage. Работают все методы API.
+        EN: bot.send_message(...) -> sendMessage. All API methods work this way.
+        """
         if name.startswith("_"):
             raise AttributeError(name)
         method = _to_camel(name)
@@ -202,16 +228,22 @@ class Bot:
         api_method.__name__ = name
         return api_method
 
-    # --- qulayliklar ----------------------------------------------------------
+    # --- UZ: qulayliklar / RU: удобства / EN: helpers -----------------------------
     async def send_rich(self, chat_id: int, rich, **kwargs):
-        """Rich message yuborish (Bot API 10.1+)."""
+        """UZ: Rich message yuborish (Bot API 10.1+).
+        RU: Отправка rich-сообщения (Bot API 10.1+).
+        EN: Send a rich message (Bot API 10.1+).
+        """
         payload = rich.to_dict() if hasattr(rich, "to_dict") else rich
         return await self.request(
             "sendRichMessage", chat_id=chat_id, rich_message=payload, **kwargs
         )
 
     def stream_rich(self, chat_id: int, **kwargs):
-        """AI javobini oqim bilan yuborish uchun `RichStream` yaratadi."""
+        """UZ: AI javobini oqim bilan yuborish uchun `RichStream` yaratadi.
+        RU: Создаёт `RichStream` для потоковой отправки ответа ИИ.
+        EN: Creates a `RichStream` to send an AI answer as a stream.
+        """
         from .rich import RichStream
 
         return RichStream(self, chat_id, **kwargs)

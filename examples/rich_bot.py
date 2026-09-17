@@ -1,8 +1,17 @@
-"""Zafather — Rich Messages namunasi (Bot API 10.1 / 10.2).
+"""UZ: Zafather — Rich Messages namunasi (Bot API 10.1 / 10.2).
+RU: Zafather — пример Rich Messages (Bot API 10.1 / 10.2).
+EN: Zafather — Rich Messages example (Bot API 10.1 / 10.2).
 
-  /report  — sarlavha, ro'yxat, jadval, kod bloki va yig'iladigan bo'limdan
-             iborat tuzilgan xabar
-  /ask ... — javobni bo'lak-bo'lak (oqim bilan) yuborish, AI botlar uchun
+UZ:  /report  — sarlavha, ro'yxat, jadval, kod bloki va yig'iladigan bo'limdan
+     iborat tuzilgan xabar
+RU:  /report  — структурированное сообщение с заголовком, списком, таблицей,
+     блоком кода и раскрывающимся разделом
+EN:  /report  — structured message with a heading, list, table, code block,
+     and collapsible section
+
+UZ:  /ask ... — javobni bo'lak-bo'lak (oqim bilan) yuborish, AI botlar uchun
+RU:  /ask ... — потоковая отправка ответа частями, для AI-ботов
+EN:  /ask ... — stream the answer in chunks, for AI bots
 """
 import asyncio
 import os

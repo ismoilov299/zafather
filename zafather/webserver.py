@@ -1,4 +1,10 @@
-"""Zafather — Mini App uchun tayyor backend server (aiohttp asosida).
+"""UZ: Zafather — Mini App uchun tayyor backend server (aiohttp asosida).
+RU: Zafather — готовый backend-сервер для Mini App (на aiohttp).
+EN: Zafather — ready-made backend server for Mini App (based on aiohttp).
+
+UZ: Misol:
+RU: Пример:
+EN: Example:
 
     server = MiniAppServer(bot, static_dir="webapp")
 
@@ -8,9 +14,15 @@
 
     server.run()          # http://0.0.0.0:8080
 
-Har bir `/api/...` so'rovi avtomatik tekshiriladi: `initData` `X-Telegram-Init-Data`
+UZ: Har bir `/api/...` so'rovi avtomatik tekshiriladi: `initData` `X-Telegram-Init-Data`
 sarlavhasida (yoki `Authorization: tma <initData>`) kelishi kerak. Tekshiruvdan
 o'tmasa handler umuman chaqirilmaydi va 401 qaytadi.
+RU: Каждый запрос к `/api/...` проверяется автоматически: `initData` должен
+приходить в заголовке `X-Telegram-Init-Data` (или `Authorization: tma <initData>`).
+Если проверка не пройдена, handler вообще не вызывается и возвращается 401.
+EN: Every request to `/api/...` is checked automatically: `initData` must be sent
+in the `X-Telegram-Init-Data` header (or `Authorization: tma <initData>`).
+If validation fails, the handler is not called and a 401 is returned.
 """
 from __future__ import annotations
 
@@ -28,7 +40,10 @@ log = logging.getLogger("zafather.miniapp")
 
 
 class MiniAppServer:
-    """Static fayllar + himoyalangan JSON API + (ixtiyoriy) webhook."""
+    """UZ: Static fayllar + himoyalangan JSON API + (ixtiyoriy) webhook.
+    RU: Статика + защищённый JSON API + (опциональный) webhook.
+    EN: Static files + protected JSON API + (optional) webhook.
+    """
 
     def __init__(
         self,
@@ -55,8 +70,13 @@ class MiniAppServer:
 
     # --- API dekoratori -------------------------------------------------------
     def api(self, path: str, methods=("POST", "GET")) -> Callable:
-        """Himoyalangan endpoint. Handler kerakli argumentlarni so'raydi:
-        `user`, `init`, `data`, `bot`, `request`."""
+        """UZ: Himoyalangan endpoint. Handler kerakli argumentlarni so'raydi:
+        `user`, `init`, `data`, `bot`, `request`.
+        RU: Защищённый endpoint. Handler запрашивает нужные аргументы:
+        `user`, `init`, `data`, `bot`, `request`.
+        EN: Protected endpoint. The handler requests the needed arguments:
+        `user`, `init`, `data`, `bot`, `request`.
+        """
 
         def decorator(func: Callable) -> Callable:
             full = f"{self.api_prefix}/{path.lstrip('/')}"
@@ -143,7 +163,10 @@ class MiniAppServer:
 
     # --- webhook --------------------------------------------------------------
     def add_webhook(self, path: str = "/webhook", secret_token: Optional[str] = None):
-        """Botni webhook rejimida shu serverga ulaydi."""
+        """UZ: Botni webhook rejimida shu serverga ulaydi.
+        RU: Подключает бота к этому серверу в режиме webhook.
+        EN: Connects the bot to this server in webhook mode.
+        """
 
         async def handler(request: web.Request) -> web.Response:
             if secret_token:
@@ -199,7 +222,10 @@ class MiniAppServer:
             await self.stop()
 
     def run(self, with_polling: bool = True, log_level: int = logging.INFO) -> None:
-        """Sinxron ishga tushirish (Ctrl+C bilan to'xtatiladi)."""
+        """UZ: Sinxron ishga tushirish (Ctrl+C bilan to'xtatiladi).
+        RU: Запуск в синхронном режиме (остановка по Ctrl+C).
+        EN: Starts in synchronous mode (stops with Ctrl+C).
+        """
         import asyncio
 
         logging.basicConfig(

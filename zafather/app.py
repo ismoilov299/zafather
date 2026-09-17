@@ -1,4 +1,7 @@
-"""Zafather — asosiy ilova sinfi (dispatcher + polling)."""
+"""UZ: Zafather — asosiy ilova sinfi (dispatcher + polling).
+RU: Zafather — основной класс приложения (dispatcher + polling).
+EN: Zafather — main application class (dispatcher + polling).
+"""
 from __future__ import annotations
 
 import asyncio
@@ -24,7 +27,13 @@ BANNER = r"""
 
 
 class Zafather(Router):
-    """Botni yaratish va ishga tushirish uchun asosiy sinf.
+    """UZ: Botni yaratish va ishga tushirish uchun asosiy sinf.
+    RU: Основной класс для создания и запуска бота.
+    EN: Main class for creating and running a bot.
+
+    UZ: Misol:
+    RU: Пример:
+    EN: Example:
 
         bot = Zafather("TOKEN")
 
@@ -58,7 +67,7 @@ class Zafather(Router):
         self._startup: List[Callable] = []
         self._shutdown: List[Callable] = []
 
-    # --- hooks ----------------------------------------------------------------
+    # --- UZ: hook'lar / RU: хуки / EN: hooks -----------------------------------
     def on_startup(self, func: Callable) -> Callable:
         self._startup.append(func)
         return func
@@ -67,7 +76,7 @@ class Zafather(Router):
         self._shutdown.append(func)
         return func
 
-    # --- update'ni qayta ishlash ---------------------------------------------
+    # --- UZ: update'ni qayta ishlash / RU: обработка update / EN: update handling ---
     def _make_context(self, event, event_type: str) -> dict:
         chat = getattr(event, "chat", None)
         if chat is None:
@@ -79,7 +88,10 @@ class Zafather(Router):
         return {"key": (chat_id, user_id), "chat_id": chat_id, "user_id": user_id}
 
     async def feed_update(self, update: Update) -> bool:
-        """Bitta update'ni handlerlarga uzatadi."""
+        """UZ: Bitta update'ni handlerlarga uzatadi.
+        RU: Передаёт один update обработчикам.
+        EN: Passes a single update to handlers.
+        """
         event_type = update.event_type
         event = update.event
         if event_type is None or event is None:
@@ -114,18 +126,26 @@ class Zafather(Router):
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
-    # --- polling --------------------------------------------------------------
+    # --- UZ: polling / RU: polling / EN: polling -------------------------------
     async def start_polling(
         self,
         skip_updates: bool = True,
         allowed_updates: Optional[List[str]] = None,
         banner: bool = False,
     ) -> None:
-        """Long polling. `allowed_updates=None` — barcha update turlari so'raladi.
+        """UZ: Long polling. `allowed_updates=None` — barcha update turlari so'raladi.
+        RU: Long polling. `allowed_updates=None` — запрашиваются все типы update.
+        EN: Long polling. `allowed_updates=None` requests all update types.
 
-        Bu muhim: `managed_bot`, `guest_message`, `message_reaction`,
+        UZ: Bu muhim: `managed_bot`, `guest_message`, `message_reaction`,
         `subscription` kabi yangi turlar aniq so'ralmasa Telegram ularni
         yubormaydi.
+        RU: Это важно: если новые типы вроде `managed_bot`, `guest_message`,
+        `message_reaction`, `subscription` не указаны явно, Telegram их не
+        присылает.
+        EN: This matters because Telegram will not send newer types such as
+        `managed_bot`, `guest_message`, `message_reaction`, or `subscription`
+        unless they are explicitly requested.
         """
         self._running = True
         if allowed_updates is None:

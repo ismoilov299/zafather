@@ -142,11 +142,15 @@ async def test_sending():
 
     # --- oqim ---
     sent.clear()
-    stream = RichStream(app.bot, 5, min_interval=0.05)
+    stream = RichStream(app.bot, 5, draft_id=77, min_interval=0.05, can_stop=True)
     await stream.push("Salom")
     await stream.push(", dunyo")          # interval o'tmagan — yuborilmaydi
     drafts = [s for s in sent if s[0] == "sendRichMessageDraft"]
     check(len(drafts) == 1, f"oqim: interval ichida bitta qoralama ({len(drafts)})")
+    check(
+        drafts[-1][1]["draft_id"] == 77 and drafts[-1][1]["can_stop"] is True,
+        "oqim: draft_id va can_stop yuborildi",
+    )
 
     await asyncio.sleep(0.06)
     await stream.push("!")

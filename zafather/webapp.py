@@ -1,13 +1,29 @@
-"""Zafather — **Mini App** (Telegram Web App) bilan ishlash.
+"""UZ: Zafather — **Mini App** (Telegram Web App) bilan ishlash.
+RU: Zafather — работа с **Mini App** (Telegram Web App).
+EN: Zafather — working with **Mini App** (Telegram Web App).
 
-Uch qismdan iborat:
+UZ: Uch qismdan iborat:
+RU: Состоит из трёх частей:
+EN: Consists of three parts:
 
-1. `validate()` — foydalanuvchi ma'lumotini tekshirish (eng muhimi!).
-   Mini App'dan kelgan `initData` ni bot tokeni bilan tekshiradi.
-2. `validate_third_party()` — token'siz tekshirish (Bot API 8.0+),
+1. UZ: `validate()` — foydalanuvchi ma'lumotini tekshirish (eng muhimi!).
+   RU: `validate()` — проверка данных пользователя (самое важное!).
+   EN: `validate()` — validating user data (most important!).
+   UZ: Mini App'dan kelgan `initData` ni bot tokeni bilan tekshiradi.
+   RU: Проверяет `initData`, пришедший из Mini App, по токену бота.
+   EN: Verifies the `initData` coming from the Mini App against the bot token.
+2. UZ: `validate_third_party()` — token'siz tekshirish (Bot API 8.0+),
    Telegram'ning Ed25519 ochiq kaliti orqali.
-3. `MiniApp` — bot tomonidagi metodlar: menyu tugmasi, `answerWebAppQuery`,
+   RU: `validate_third_party()` — проверка без токена (Bot API 8.0+),
+   через открытый ключ Ed25519 Telegram.
+   EN: `validate_third_party()` — validation without a token (Bot API 8.0+),
+   using Telegram's public Ed25519 key.
+3. UZ: `MiniApp` — bot tomonidagi metodlar: menyu tugmasi, `answerWebAppQuery`,
    tayyor xabar/tugmalar, emoji status.
+   RU: `MiniApp` — методы со стороны бота: кнопка меню, `answerWebAppQuery`,
+   готовые сообщения/кнопки, статус emoji.
+   EN: `MiniApp` — bot-side methods: menu button, `answerWebAppQuery`,
+   ready messages/buttons, emoji status.
 
 ::
 
@@ -19,8 +35,12 @@ Uch qismdan iborat:
     except WebAppAuthError as exc:
         print("Ishonchsiz ma'lumot:", exc)
 
-**Hech qachon** `initData` ichidagi `user` ni tekshirmasdan ishonmang —
+UZ: **Hech qachon** `initData` ichidagi `user` ni tekshirmasdan ishonmang —
 uni brauzerda istalgan odam o'zgartirishi mumkin.
+RU: **Никогда** не доверяйте `user` внутри `initData` без проверки — его
+может изменить любой человек в браузере.
+EN: **Never** trust the `user` field inside `initData` without validation — any
+browser user can tamper with it.
 """
 from __future__ import annotations
 
@@ -43,11 +63,17 @@ _JSON_FIELDS = ("user", "receiver", "chat")
 
 
 class WebAppAuthError(Exception):
-    """initData ishonchsiz yoki eskirgan."""
+    """UZ: initData ishonchsiz yoki eskirgan.
+    RU: initData ненадёжный или устаревший.
+    EN: initData is invalid or stale.
+    """
 
 
 class WebAppInitData:
-    """Tekshirilgan `initData`. Maydonlarga atribut orqali murojaat qilinadi."""
+    """UZ: Tekshirilgan `initData`. Maydonlarga atribut orqali murojaat qilinadi.
+    RU: Проверенный `initData`. Поля доступны через атрибуты.
+    EN: A validated `initData`. Fields are accessible via attributes.
+    """
 
     def __init__(self, data: Dict[str, Any]) -> None:
         self._data = data
@@ -86,7 +112,10 @@ class WebAppInitData:
 
 
 class _Obj:
-    """initData ichidagi JSON obyektlari (user, chat, receiver) uchun qobiq."""
+    """UZ: initData ichidagi JSON obyektlari (user, chat, receiver) uchun qobiq.
+    RU: Обёртка для JSON-объектов внутри initData (user, chat, receiver).
+    EN: Wrapper for JSON objects inside initData (user, chat, receiver).
+    """
 
     def __init__(self, data: dict) -> None:
         self._data = data

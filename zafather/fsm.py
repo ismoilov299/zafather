@@ -1,4 +1,10 @@
-"""Zafather — FSM (holatlar mashinasi).
+"""UZ: Zafather — FSM (holatlar mashinasi).
+RU: Zafather — FSM (машина состояний).
+EN: Zafather — FSM (finite state machine).
+
+UZ: Misol:
+RU: Пример:
+EN: Example:
 
     class Form(StatesGroup):
         name = State()
@@ -15,7 +21,10 @@ from typing import Any, Dict, Optional, Tuple
 
 
 class State:
-    """Bitta holat. `StatesGroup` ichida e'lon qilinadi."""
+    """UZ: Bitta holat. `StatesGroup` ichida e'lon qilinadi.
+    RU: Одно состояние. Объявляется внутри `StatesGroup`.
+    EN: A single state. Declared inside a `StatesGroup`.
+    """
 
     def __init__(self, name: Optional[str] = None):
         self._name = name
@@ -66,7 +75,10 @@ class StatesGroupMeta(type):
 
 
 class StatesGroup(metaclass=StatesGroupMeta):
-    """Holatlar guruhi."""
+    """UZ: Holatlar guruhi.
+    RU: Группа состояний.
+    EN: Group of states.
+    """
 
     __states__: tuple = ()
 
@@ -96,7 +108,10 @@ class BaseStorage:
 
 
 class MemoryStorage(BaseStorage):
-    """RAM'da saqlaydigan oddiy storage (bot qayta ishga tushsa o'chadi)."""
+    """UZ: RAM'da saqlaydigan oddiy storage (bot qayta ishga tushsa o'chadi).
+    RU: Простое хранилище в RAM (сбрасывается при перезапуске бота).
+    EN: Simple in-memory storage (reset when the bot restarts).
+    """
 
     def __init__(self) -> None:
         self._states: Dict[StorageKey, Optional[str]] = {}
@@ -119,7 +134,10 @@ class MemoryStorage(BaseStorage):
 
 
 class JSONStorage(MemoryStorage):
-    """Diskka JSON qilib yozadigan storage (kichik botlar uchun yetarli)."""
+    """UZ: Diskka JSON qilib yozadigan storage (kichik botlar uchun yetarli).
+    RU: Хранилище, которое пишет JSON на диск (достаточно для небольших ботов).
+    EN: Storage that writes JSON to disk (enough for small bots).
+    """
 
     def __init__(self, path: str = "zafather_state.json") -> None:
         super().__init__()
@@ -160,7 +178,10 @@ class JSONStorage(MemoryStorage):
 
 
 class FSMContext:
-    """Handler ichida `state` argumenti sifatida keladi."""
+    """UZ: Handler ichida `state` argumenti sifatida keladi.
+    RU: Передаётся в handler как аргумент `state`.
+    EN: Passed to the handler as the `state` argument.
+    """
 
     def __init__(self, storage: BaseStorage, key: StorageKey):
         self.storage = storage

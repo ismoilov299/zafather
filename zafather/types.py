@@ -1,4 +1,7 @@
-"""Zafather — Telegram API obyektlari (Bot API 10.2)."""
+"""UZ: Zafather — Telegram API obyektlari (Bot API 10.3).
+RU: Zafather — объекты Telegram API (Bot API 10.3).
+EN: Zafather — Telegram API objects (Bot API 10.3).
+"""
 from __future__ import annotations
 
 import json
@@ -178,10 +181,20 @@ class Message(TelegramObject):
             **kwargs,
         )
 
-    # --- Bot API 10.2: ephemeral xabarlar ------------------------------------
+    # UZ: Bot API 10.2/10.3 ephemeral xabar helperlari.
+    # RU: helper'ы ephemeral-сообщений Bot API 10.2/10.3.
+    # EN: Bot API 10.2/10.3 ephemeral message helpers.
     async def answer_ephemeral(self, text: str, **kwargs) -> "Message":
-        """Guruhda faqat shu foydalanuvchiga ko'rinadigan xabar (Bot API 10.2)."""
-        kwargs.setdefault("receiver_user_id", self.user_id)
+        """UZ: Guruhda faqat shu foydalanuvchiga ko'rinadigan xabar yuboradi.
+        RU: Отправляет сообщение, видимое только этому пользователю в группе.
+        EN: Sends a message visible only to this user in a group.
+        """
+        params = dict(kwargs.pop("ephemeral_message_parameters", {}) or {})
+        receiver_user_id = kwargs.pop("receiver_user_id", self.user_id)
+        if receiver_user_id is not None:
+            params.setdefault("receiver_user_id", receiver_user_id)
+        if params:
+            kwargs["ephemeral_message_parameters"] = params
         return await self._bot.send_message(chat_id=self.chat_id, text=text, **kwargs)
 
     async def edit_ephemeral(self, text: str, **kwargs):
@@ -264,8 +277,13 @@ class CallbackQuery(TelegramObject):
         return await self._bot.send_message(chat_id=self.chat_id, text=text, **kwargs)
 
     async def answer_ephemeral(self, text: str, **kwargs):
-        """Tugma bosgan foydalanuvchigagina ko'rinadigan xabar (Bot API 10.2)."""
-        kwargs.setdefault("callback_query_id", self.id)
+        """UZ: Tugmani bosgan foydalanuvchigagina ko'rinadigan xabar yuboradi.
+        RU: Отправляет сообщение, видимое только пользователю, нажавшему кнопку.
+        EN: Sends a message visible only to the user who pressed the button.
+        """
+        params = dict(kwargs.pop("ephemeral_message_parameters", {}) or {})
+        params.setdefault("callback_query_id", kwargs.pop("callback_query_id", self.id))
+        kwargs["ephemeral_message_parameters"] = params
         return await self._bot.send_message(chat_id=self.chat_id, text=text, **kwargs)
 
 
@@ -311,6 +329,13 @@ class BotSubscriptionUpdated(TelegramObject):
 
 class PaidMediaPurchased(TelegramObject):
     pass
+
+
+class MessageGenerationStopped(TelegramObject):
+    """UZ: Foydalanuvchi xabar generatsiyasini to'xtatishni so'radi.
+    RU: Пользователь запросил остановку генерации сообщения.
+    EN: The user requested message generation to stop.
+    """
 
 
 class Update(TelegramObject):
@@ -363,6 +388,12 @@ MessageReactionUpdated.__fields__ = {"chat": Chat, "user": User, "from": User, "
 ChatBoostUpdated.__fields__ = {"chat": Chat}
 BotSubscriptionUpdated.__fields__ = {"from": User, "from_user": User, "chat": Chat}
 PaidMediaPurchased.__fields__ = {"from": User, "from_user": User}
+MessageGenerationStopped.__fields__ = {
+    "chat": Chat,
+    "from": User,
+    "from_user": User,
+    "user": User,
+}
 
 Update.__fields__ = {
     "message": Message,
@@ -385,6 +416,7 @@ Update.__fields__ = {
     "chat_boost": ChatBoostUpdated,
     "removed_chat_boost": ChatBoostUpdated,
     "purchased_paid_media": PaidMediaPurchased,
+    "stopped_message_generation": MessageGenerationStopped,
     "guest_message": Message,          # 10.0 — guest mode
     "managed_bot": ManagedBotUpdated,  # 9.6  — bot yaratadigan botlar
     "subscription": BotSubscriptionUpdated,  # 10.2
@@ -411,5 +443,6 @@ for _cls in (
     MessageReactionUpdated,
     BotSubscriptionUpdated,
     PaidMediaPurchased,
+    MessageGenerationStopped,
 ):
     _cls.from_user = property(_from_user_alias)

@@ -1,21 +1,35 @@
-"""Zafather — matn formatlash va **premium (custom) emoji**.
+"""UZ: Zafather — matn formatlash va **premium (custom) emoji**.
+RU: Zafather — форматирование текста и **premium (custom) emoji**.
+EN: Zafather — text formatting and **premium (custom) emoji**.
 
-Premium emoji ikki yo'l bilan qo'yiladi:
+UZ: Premium emoji ikki yo'l bilan qo'yiladi:
+RU: Premium emoji можно вставить двумя способами:
+EN: Premium emoji can be inserted in two ways:
 
-1. HTML orqali (oddiy va tavsiya etiladi)::
+1. UZ: HTML orqali (oddiy va tavsiya etiladi)::
+   RU: Через HTML (просто и рекомендуется)::
+   EN: Via HTML (simple and recommended)::
 
        from zafather import emoji, bold
        await m.answer(f"{emoji('5368324170671202286', '🔥')} {bold('Chegirma!')}")
 
-2. Entity ro'yxati orqali (parse_mode kerak emas)::
+2. UZ: Entity ro'yxati orqali (parse_mode kerak emas)::
+   RU: Через список entity (parse_mode не нужен)::
+   EN: Via entity list (parse_mode not required)::
 
        tb = TextBuilder()
        tb.emoji("5368324170671202286", "🔥").text(" Chegirma ").bold("50%")
        await m.answer(tb.text_value, entities=tb.entities)
 
-Eslatma (Bot API 9.4): botlar custom emoji'ni to'g'ridan-to'g'ri yuborgan
+UZ: Eslatma (Bot API 9.4): botlar custom emoji'ni to'g'ridan-to'g'ri yuborgan
 xabarlarida ishlatishi mumkin, agar **bot egasida Telegram Premium** bo'lsa.
 Fragment'da qo'shimcha username sotib olgan botlar uchun cheklov yo'q.
+RU: Примечание (Bot API 9.4): боты могут отправлять custom emoji напрямую,
+если **у владельца бота есть Telegram Premium**. Для ботов, купивших extra
+username в Fragment, ограничения нет.
+EN: Note (Bot API 9.4): bots can send custom emoji directly if the **bot owner
+has Telegram Premium**. For bots that bought an extra username in Fragment,
+there is no restriction.
 """
 from __future__ import annotations
 
@@ -27,18 +41,27 @@ from typing import List, Optional, Union
 
 
 class SafeHTML(str):
-    """Allaqachon HTML bo'lgan matn — qayta ekranlanmaydi."""
+    """UZ: Allaqachon HTML bo'lgan matn — qayta ekranlanmaydi.
+    RU: Текст, который уже является HTML — повторно не экранируется.
+    EN: Text that is already HTML — it is not escaped again.
+    """
 
 
 def escape(text: str) -> str:
-    """HTML uchun xavfsiz qilish."""
+    """UZ: HTML uchun xavfsiz qilish.
+    RU: Экранирование для HTML.
+    EN: Escaping for HTML.
+    """
     if isinstance(text, SafeHTML):
         return str(text)
     return _html.escape(str(text), quote=False)
 
 
 def emoji(custom_emoji_id: Union[str, int], fallback: str = "⭐️") -> str:
-    """Premium (custom) emoji. `fallback` — emoji ko'rinmasa chiqadigan oddiy emoji."""
+    """UZ: Premium (custom) emoji. `fallback` — emoji ko'rinmasa chiqadigan oddiy emoji.
+    RU: Premium (custom) emoji. `fallback` — обычный emoji, если custom emoji не отображается.
+    EN: Premium (custom) emoji. `fallback` is a regular emoji displayed if the custom one is unavailable.
+    """
     return SafeHTML(f'<tg-emoji emoji-id="{custom_emoji_id}">{fallback}</tg-emoji>')
 
 
@@ -81,13 +104,19 @@ def mention(text: str, user_id: int) -> str:
 
 
 def quote(text: str, expandable: bool = False) -> str:
-    """Sitata bloki. `expandable=True` — yig'iladigan sitata."""
+    """UZ: Sitata bloki. `expandable=True` — yig'iladigan sitata.
+    RU: Блок цитаты. `expandable=True` — раскрываемая цитата.
+    EN: Quote block. `expandable=True` creates a collapsible quote.
+    """
     attr = " expandable" if expandable else ""
     return SafeHTML(f"<blockquote{attr}>{escape(text)}</blockquote>")
 
 
 def hashtag(tag: str, chat_username: Optional[str] = None) -> str:
-    """Hashtag; `chat_username` berilsa, o'sha chatda qidiradi."""
+    """UZ: Hashtag; `chat_username` berilsa, o'sha chatda qidiradi.
+    RU: Hashtag; если передан `chat_username`, поиск идёт в этом чате.
+    EN: Hashtag; if `chat_username` is passed, it searches in that chat.
+    """
     tag = tag.lstrip("#")
     if chat_username:
         return f'<a href="https://t.me/{chat_username.lstrip("@")}?q=%23{tag}">#{tag}</a>'
@@ -98,9 +127,13 @@ def hashtag(tag: str, chat_username: Optional[str] = None) -> str:
 
 
 class TextBuilder:
-    """Matn + entity ro'yxatini birga quradi (parse_mode ishlatmasdan).
+    """UZ: Matn + entity ro'yxatini birga quradi (parse_mode ishlatmasdan).
+    RU: Собирает текст + список entity в одном объекте (без parse_mode).
+    EN: Builds text + an entity list together (without parse_mode).
 
-    `date_time` (Bot API 9.5) kabi HTML'da mavjud bo'lmagan entity'lar uchun kerak::
+    UZ: `date_time` (Bot API 9.5) kabi HTML'da mavjud bo'lmagan entity'lar uchun kerak::
+    RU: Нужен для entity, которых нет в HTML, например `date_time` (Bot API 9.5)::
+    EN: Useful for entity types not available in HTML, such as `date_time` (Bot API 9.5)::
 
         tb = TextBuilder("Uchrashuv: ").date_time("1-sentabr 10:00", timestamp=1788508800)
         await m.answer(tb.text_value, entities=tb.entities)
@@ -179,9 +212,15 @@ class TextBuilder:
         return self._add(fallback, "custom_emoji", custom_emoji_id=str(custom_emoji_id))
 
     def date_time(self, value: str, **fields) -> "TextBuilder":
-        """`date_time` entity (Bot API 9.5) — sanani foydalanuvchi mahalliy
+        """UZ: `date_time` entity (Bot API 9.5) — sanani foydalanuvchi mahalliy
         vaqtida ko'rsatadi. Qo'shimcha maydonlar rasmiy hujjat bo'yicha
-        uzatiladi (masalan `timestamp=...`)."""
+        uzatiladi (masalan `timestamp=...`).
+        RU: `date_time` entity (Bot API 9.5) — показывает дату в локальном времени
+        пользователя. Дополнительные поля передаются по документации
+        (например, `timestamp=...`).
+        EN: `date_time` entity (Bot API 9.5) shows a date in the user's local time.
+        Extra fields follow the API docs (for example `timestamp=...`).
+        """
         return self._add(value, "date_time", **fields)
 
     def entity(self, entity_type: str, value: str, **fields) -> "TextBuilder":

@@ -5,13 +5,33 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/ismoilov299)
 
+## UZ / RU / EN
+
+### O'zbekcha
 **Zafather** — Telegram botlar yozish uchun yengil, async va tashqi bog'liqliklari kam framework.
 Faqat bitta kutubxonaga (`aiohttp`) tayanadi, ichini o'qib tushunish oson.
 
+**Bot API 10.3** darajasida: rangli tugmalar, premium emoji, bot yaratadigan botlar,
+ephemeral xabarlar, guest mode, reaksiyalar, obunalar.
+
+### Русский
+**Zafather** — лёгкий async-фреймворк для создания Telegram-ботов с минимальными зависимостями.
+Поддерживает только одну библиотеку (`aiohttp`), код читабелен и прост в изучении.
+
+**Bot API 10.3**: цветные кнопки, premium emoji, боты, создающие ботов,
+ ephemeral-сообщения, guest mode, реакции, подписки.
+
+### English
+**Zafather** — a lightweight async framework for building Telegram bots with minimal dependencies.
+It relies on only one library (`aiohttp`) and is designed to be easy to read and understand.
+
+**Bot API 10.3** support includes colored buttons, premium emoji, bots that create bots,
+ ephemeral messages, guest mode, reactions, and subscriptions.
+
 Muallif va yetakchi dasturchi — [**ismoilov299**](https://github.com/ismoilov299).
 
-**Bot API 10.2** (14-iyul, 2026) darajasida: rangli tugmalar, premium emoji,
-bot yaratadigan botlar, ephemeral xabarlar, guest mode, reaksiyalar, obunalar.
+Hujjatlar: [O'zbekcha](docs/uz/index.md) · [Русский](docs/ru/index.md) · [English](docs/en/index.md)
+
 
 ```python
 from zafather import Zafather, Message, F
@@ -69,7 +89,7 @@ python bot.py
 | **Rangli tugmalar** | `.primary()` / `.success()` / `.danger()` (Bot API 9.4+) |
 | **Premium emoji** | `emoji(id, "🔥")` va tugma ikonkalari (`icon=`) |
 | **Managed bots** | Bot yaratadigan bot: `ManagedBots`, `BotFarm`, `bot.spawn()` |
-| **Ephemeral** | `m.answer_ephemeral(...)` — guruhda bitta odamga ko'rinadi (10.2) |
+| **Ephemeral** | `m.answer_ephemeral(...)` — guruhda bitta odamga ko'rinadi (10.2/10.3) |
 | Yangi update'lar | `@bot.managed_bot`, `@bot.guest`, `@bot.subscription`, `@bot.reaction` |
 | Xatolar | Avtomatik qayta urinish, 429 flood-limit, `@bot.errors` |
 | Webhook | `await bot.handle_webhook(payload)` (FastAPI/aiohttp bilan) |
@@ -78,7 +98,7 @@ python bot.py
 
 ---
 
-## Bot API 10.2 imkoniyatlari
+## Bot API 10.2/10.3 imkoniyatlari
 
 ### Rangli tugmalar (9.4+)
 
@@ -145,7 +165,7 @@ async def on_managed_bot(event, bot):
 
 Talab: @BotFather'da manager botga *Bot Management Mode* yoqilgan bo'lishi kerak.
 
-### Ephemeral xabarlar (10.2)
+### Ephemeral xabarlar (10.2/10.3)
 
 ```python
 @bot.command("secret")
@@ -426,7 +446,7 @@ async def on_data(m, web_app_data):     # JSON bo'lsa avtomatik dict bo'ladi
 
 ---
 
-## Rich Messages (Bot API 10.1 / 10.2)
+## Rich Messages (Bot API 10.1 / 10.3)
 
 Oddiy xabarda sarlavha, jadval yoki yig'iladigan bo'lim yasab bo'lmaydi —
 rich message aynan shuning uchun. AI botlar javobni oqim bilan yuborishi ham

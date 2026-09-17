@@ -1,4 +1,10 @@
-"""Zafather CLI.
+"""UZ: Zafather CLI.
+RU: Zafather CLI.
+EN: Zafather CLI.
+
+UZ: Misol:
+RU: Пример:
+EN: Example:
 
     python -m zafather new mybot     # yangi loyiha yaratadi
     python -m zafather version

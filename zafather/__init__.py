@@ -1,9 +1,14 @@
-"""
-Zafather — Telegram botlar uchun yengil async framework.
+"""UZ: Zafather — Telegram botlar uchun yengil async framework.
+RU: Zafather — лёгкий async-фреймворк для Telegram-ботов.
+EN: Zafather — a lightweight async framework for Telegram bots.
 
-Bot API **10.2** (14-iyul, 2026) imkoniyatlarini qo'llab-quvvatlaydi:
-rangli tugmalar, premium emoji, bot yaratadigan botlar, ephemeral xabarlar,
-guest mode, reaksiyalar, obunalar va boshqalar.
+UZ: Bot API **10.3** imkoniyatlarini qo'llab-quvvatlaydi: rangli tugmalar,
+premium emoji, bot yaratadigan botlar, ephemeral xabarlar, guest mode,
+reaksiyalar, obunalar va boshqalar.
+RU: Поддерживает возможности Bot API **10.3**: цветные кнопки, premium emoji,
+боты, создающие ботов, ephemeral-сообщения, guest mode, реакции, подписки.
+EN: Supports Bot API **10.3** features: colored buttons, premium emoji,
+bots that create bots, ephemeral messages, guest mode, reactions, subscriptions.
 
     from zafather import Zafather, Message, InlineKeyboard, emoji, F
 
@@ -99,6 +104,7 @@ from .types import (
     InlineQuery,
     ManagedBotUpdated,
     Message,
+    MessageGenerationStopped,
     MessageReactionUpdated,
     TelegramObject,
     Update,
@@ -111,35 +117,36 @@ __author__ = "ismoilov299"
 __license__ = "MIT"
 
 __all__ = [
-    # asosiy
+    # UZ: asosiy / RU: основные / EN: core
     "Zafather", "Bot", "Router", "SkipHandler", "F",
-    # tiplar
+    # UZ: tiplar / RU: типы / EN: types
     "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
     "TelegramObject", "ManagedBotUpdated", "BusinessConnection",
     "MessageReactionUpdated", "ChatBoostUpdated", "BotSubscriptionUpdated",
-    # filtrlar
+    "MessageGenerationStopped",
+    # UZ: filtrlar / RU: фильтры / EN: filters
     "Filter", "Command", "Text", "Regex", "ChatType", "ContentType", "UserFilter",
     "StateFilter", "Service", "Ephemeral", "Premium", "HasCustomEmoji",
     "IsPrivate", "IsGroup",
     # FSM
     "State", "StatesGroup", "FSMContext", "MemoryStorage", "JSONStorage", "BaseStorage",
-    # klaviaturalar
+    # UZ: klaviaturalar / RU: клавиатуры / EN: keyboards
     "InlineKeyboard", "ReplyKeyboard", "RemoveKeyboard", "ForceReply", "confirm_keyboard",
-    # matn va premium emoji
+    # UZ: matn va premium emoji / RU: текст и premium emoji / EN: text and premium emoji
     "emoji", "bold", "italic", "underline", "strike", "spoiler", "code", "pre",
     "link", "mention", "quote", "escape", "TextBuilder", "strip_custom_emoji", "SafeHTML",
-    # managed bots
+    # UZ: boshqariladigan botlar / RU: управляемые боты / EN: managed bots
     "ManagedBots", "BotFarm",
-    # rich messages
+    # UZ: tuzilgan xabarlar / RU: rich-сообщения / EN: rich messages
     "RichMessage", "RichStream", "markdown_rich",
     # Mini App
     "validate", "validate_third_party", "is_valid", "parse_init_data",
     "WebAppInitData", "WebAppAuthError", "WebAppData", "MiniApp", "MiniAppServer",
     "direct_link", "main_app_link", "attach_link",
-    # konstantalar
+    # UZ: konstantalar / RU: константы / EN: constants
     "ButtonStyle", "UpdateType", "ContentTypes", "ChatAction", "ParseMode",
     "ChatTypeEnum", "Currency", "DiceEmoji", "PollType", "BOT_API_VERSION",
-    # boshqa
+    # UZ: boshqa / RU: прочее / EN: other
     "InputFile", "TelegramError", "NetworkError",
     "__version__", "__bot_api__",
 ]

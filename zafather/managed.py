@@ -1,14 +1,32 @@
-"""Zafather — **Managed Bots**: bot yaratadigan botlar (Bot API 9.6+).
+"""UZ: Zafather — **Managed Bots**: bot yaratadigan botlar (Bot API 9.6+).
+RU: Zafather — **Managed Bots**: боты, создающие ботов (Bot API 9.6+).
+EN: Zafather — **Managed Bots**: bots that create bots (Bot API 9.6+).
 
-Ish tartibi:
+UZ: Ish tartibi:
+RU: Порядок работы:
+EN: Workflow:
 
-1. @BotFather'da manager botga *Bot Management Mode* yoqiladi.
-2. Foydalanuvchiga havola beriladi: ``https://t.me/newbot/<manager>/<taklif_username>``
+1. UZ: @BotFather'da manager botga *Bot Management Mode* yoqiladi.
+   RU: В @BotFather для manager bot включается *Bot Management Mode*.
+   EN: In @BotFather, enable *Bot Management Mode* for the manager bot.
+2. UZ: Foydalanuvchiga havola beriladi: ``https://t.me/newbot/<manager>/<taklif_username>``
+   RU: Пользователю выдаётся ссылка: ``https://t.me/newbot/<manager>/<suggested_username>``
+   EN: The user is given a link: ``https://t.me/newbot/<manager>/<suggested_username>``
    yoki `ReplyKeyboard.request_bot()` tugmasi ko'rsatiladi.
-3. Foydalanuvchi tasdiqlaydi → botga `managed_bot` update va
+   или показывается кнопка `ReplyKeyboard.request_bot()`.
+   or a `ReplyKeyboard.request_bot()` button is shown.
+3. UZ: Foydalanuvchi tasdiqlaydi → botga `managed_bot` update va
    `managed_bot_created` xizmat xabari keladi.
-4. Manager `getManagedBotToken` orqali yangi botning tokenini oladi.
-5. `BotFarm` o'sha token bilan yangi Zafather nusxasini ishga tushiradi.
+   RU: Пользователь подтверждает → приходит `managed_bot` update и
+   служебное сообщение `managed_bot_created`.
+   EN: The user confirms → the bot receives a `managed_bot` update and a
+   `managed_bot_created` service message.
+4. UZ: Manager `getManagedBotToken` orqali yangi botning tokenini oladi.
+   RU: Manager получает токен нового бота через `getManagedBotToken`.
+   EN: The manager fetches the new bot token via `getManagedBotToken`.
+5. UZ: `BotFarm` o'sha token bilan yangi Zafather nusxasini ishga tushiradi.
+   RU: `BotFarm` запускает новую копию Zafather с этим токеном.
+   EN: `BotFarm` starts a new Zafather instance with that token.
 
 ::
 
@@ -30,10 +48,15 @@ log = logging.getLogger("zafather.managed")
 
 
 class ManagedBots:
-    """`getManagedBotToken` / `replaceManagedBotToken` ustidagi qulay qobiq.
+    """UZ: `getManagedBotToken` / `replaceManagedBotToken` ustidagi qulay qobiq.
+    RU: Удобная обёртка над `getManagedBotToken` / `replaceManagedBotToken`.
+    EN: Convenient wrapper over `getManagedBotToken` / `replaceManagedBotToken`.
 
-    Metod parametrlari rasmiy hujjat bo'yicha uzatiladi — qo'shimcha
+    UZ: Metod parametrlari rasmiy hujjat bo'yicha uzatiladi — qo'shimcha
     kalitlarni `**params` orqali berish mumkin.
+    RU: Параметры методов передаются по официальной документации — дополнительные
+    ключи можно передавать через `**params`.
+    EN: Method parameters follow the official docs; extra keys can be passed via `**params`.
     """
 
     def __init__(self, bot) -> None:
@@ -45,7 +68,10 @@ class ManagedBots:
         suggested_username: str,
         name: Optional[str] = None,
     ) -> str:
-        """Bot yaratish havolasi: ``t.me/newbot/<manager>/<username>?name=<nom>``."""
+        """UZ: Bot yaratish havolasi: ``t.me/newbot/<manager>/<username>?name=<nom>``.
+        RU: Ссылка для создания бота: ``t.me/newbot/<manager>/<username>?name=<имя>``.
+        EN: Bot creation link: ``t.me/newbot/<manager>/<username>?name=<name>``.
+        """
         manager = manager_username.lstrip("@")
         username = suggested_username.lstrip("@")
         url = f"https://t.me/newbot/{manager}/{username}"
@@ -54,7 +80,10 @@ class ManagedBots:
         return url
 
     async def token(self, bot_id: int = None, **params) -> Optional[str]:
-        """Boshqariladigan botning tokenini oladi."""
+        """UZ: Boshqariladigan botning tokenini oladi.
+        RU: Возвращает токен управляемого бота.
+        EN: Retrieves the managed bot token.
+        """
         if bot_id is not None:
             params.setdefault("bot_id", bot_id)
         result = await self.bot.call("getManagedBotToken", **params)
@@ -63,7 +92,10 @@ class ManagedBots:
         return result
 
     async def replace_token(self, bot_id: int = None, **params) -> Optional[str]:
-        """Tokenni yangilaydi (eskisi bekor bo'ladi)."""
+        """UZ: Tokenni yangilaydi (eskisi bekor bo'ladi).
+        RU: Обновляет токен (старый токен становится недействительным).
+        EN: Replaces the token (the old one becomes invalid).
+        """
         if bot_id is not None:
             params.setdefault("bot_id", bot_id)
         result = await self.bot.call("replaceManagedBotToken", **params)
@@ -89,10 +121,16 @@ class ManagedBots:
 
 
 class BotFarm:
-    """Bir vaqtda ko'p botni (yaratilgan "bola" botlarni) ishga tushiradi.
+    """UZ: Bir vaqtda ko'p botni (yaratilgan "bola" botlarni) ishga tushiradi.
+    RU: Запускает сразу несколько ботов (созданных "дочерних" ботов).
+    EN: Starts multiple bots at once (created child bots).
 
-    Har bir bot alohida `Zafather` nusxasi bo'ladi, lekin handlerlar bitta
+    UZ: Har bir bot alohida `Zafather` nusxasi bo'ladi, lekin handlerlar bitta
     `Router`dan olinadi — ya'ni kodni bir marta yozasiz::
+    RU: Каждый бот — отдельная копия `Zafather`, но handlers берутся из одного
+    `Router` — то есть код пишется один раз::
+    EN: Each bot is a separate `Zafather` instance, but handlers are taken from a
+    single `Router` — so the code is written once::
 
         child = Router("child")
 
@@ -125,7 +163,10 @@ class BotFarm:
         return token.split(":")[0]
 
     async def add(self, token: str, **kwargs) -> Any:
-        """Yangi botni fermaga qo'shadi va polling'ni boshlaydi."""
+        """UZ: Yangi botni fermaga qo'shadi va polling'ni boshlaydi.
+        RU: Добавляет нового бота в ферму и запускает polling.
+        EN: Adds a new bot to the farm and starts polling.
+        """
         from .app import Zafather  # aylanma importni oldini olish
 
         key = self._key(token)
@@ -157,7 +198,10 @@ class BotFarm:
         return app
 
     async def remove(self, token_or_id: str) -> bool:
-        """Botni to'xtatib, fermadan chiqaradi."""
+        """UZ: Botni to'xtatib, fermadan chiqaradi.
+        RU: Останавливает бота и удаляет его из фермы.
+        EN: Stops the bot and removes it from the farm.
+        """
         key = self._key(str(token_or_id))
         app = self.bots.pop(key, None)
         if app is None:
@@ -170,7 +214,10 @@ class BotFarm:
         return True
 
     async def broadcast(self, chat_ids, text: str, **kwargs) -> int:
-        """Ferma ichidagi barcha botlardan xabar yuborish."""
+        """UZ: Ferma ichidagi barcha botlardan xabar yuborish.
+        RU: Отправляет сообщение из всех ботов в ферме.
+        EN: Sends a message from all bots in the farm.
+        """
         sent = 0
         for app in list(self.bots.values()):
             for chat_id in chat_ids:
@@ -182,7 +229,10 @@ class BotFarm:
         return sent
 
     async def run_forever(self) -> None:
-        """Ferma to'xtatilmaguncha kutib turadi."""
+        """UZ: Ferma to'xtatilmaguncha kutib turadi.
+        RU: Ждёт, пока ферма не будет остановлена.
+        EN: Waits until the farm is stopped.
+        """
         while True:
             await asyncio.sleep(3600)
 

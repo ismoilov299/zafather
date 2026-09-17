@@ -1,7 +1,13 @@
-"""Zafather — filtrlar.
+"""UZ: Zafather — filtrlar.
+RU: Zafather — фильтры.
+EN: Zafather — filters.
 
-Filtr — bu `False` (mos emas), `True` (mos) yoki `dict` (mos + handlerga
+UZ: Filtr — bu `False` (mos emas), `True` (mos) yoki `dict` (mos + handlerga
 qo'shimcha argument uzatish) qaytaradigan har qanday chaqiriluvchi obyekt.
+RU: Фильтр — это любой вызываемый объект, который возвращает `False` (не подходит),
+`True` (подходит) или `dict` (подходит + передаёт дополнительные аргументы в handler).
+EN: A filter is any callable object that returns `False` (does not match), `True`
+(match), or `dict` (match + extra arguments forwarded to the handler).
 """
 from __future__ import annotations
 
@@ -32,7 +38,10 @@ def _param_count(func: Callable) -> int:
 
 
 async def check_filter(f: Callable, event, data: dict) -> tuple[bool, dict]:
-    """Filtrni chaqirib, (mos_keldimi, qo'shimcha_ma'lumot) qaytaradi."""
+    """UZ: Filtrni chaqirib, (mos_keldimi, qo'shimcha_ma'lumot) qaytaradi.
+    RU: Вызывает фильтр и возвращает `(подходит_ли, дополнительные_данные)`.
+    EN: Calls the filter and returns `(matched, additional_data)`.
+    """
     result = f(event, data) if _param_count(f) >= 2 else f(event)
     if inspect.isawaitable(result):
         result = await result
@@ -42,7 +51,10 @@ async def check_filter(f: Callable, event, data: dict) -> tuple[bool, dict]:
 
 
 class Filter:
-    """Barcha filtrlar uchun asosiy sinf. `&`, `|`, `~` amallarini qo'llab-quvvatlaydi."""
+    """UZ: Barcha filtrlar uchun asosiy sinf. `&`, `|`, `~` amallarini qo'llab-quvvatlaydi.
+    RU: Базовый класс для всех фильтров. Поддерживает операторы `&`, `|`, `~`.
+    EN: Base class for all filters. Supports `&`, `|`, and `~` operators.
+    """
 
     async def __call__(self, event, data: dict = None) -> Union[bool, dict]:
         raise NotImplementedError
@@ -93,7 +105,13 @@ class NotFilter(Filter):
 
 
 class Command(Filter):
-    """`/start`, `/help` kabi buyruqlar.
+    """UZ: `/start`, `/help` kabi buyruqlar.
+    RU: Команды вроде `/start`, `/help`.
+    EN: Commands such as `/start`, `/help`.
+
+    UZ: Misol:
+    RU: Пример:
+    EN: Example:
 
         @bot.message(Command("start", "boshla"))
         async def handler(m: Message, command: str, args: str | None): ...
@@ -134,7 +152,10 @@ class Command(Filter):
 
 
 class Text(Filter):
-    """Matn bo'yicha moslash."""
+    """UZ: Matn bo'yicha moslash.
+    RU: Сопоставление по тексту.
+    EN: Matching by text.
+    """
 
     def __init__(
         self,
@@ -174,7 +195,10 @@ class Text(Filter):
 
 
 class Regex(Filter):
-    """Regex bo'yicha moslash. Handlerga `match` argumentini uzatadi."""
+    """UZ: Regex bo'yicha moslash. Handlerga `match` argumentini uzatadi.
+    RU: Сопоставление по regex. Передаёт аргумент `match` в handler.
+    EN: Matching by regex. Passes the `match` argument to the handler.
+    """
 
     def __init__(self, pattern: Union[str, re.Pattern], flags: int = 0):
         self.pattern = re.compile(pattern, flags) if isinstance(pattern, str) else pattern
@@ -258,7 +282,7 @@ class Service(Filter):
 
 
 class Ephemeral(Filter):
-    """Faqat ephemeral (bir foydalanuvchiga ko'rinadigan) xabarlar — Bot API 10.2."""
+    """Faqat ephemeral (bir foydalanuvchiga ko'rinadigan) xabarlar — Bot API 10.2/10.3."""
 
     async def __call__(self, event, data: dict = None):
         return getattr(event, "ephemeral_message_id", None) is not None

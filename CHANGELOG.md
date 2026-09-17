@@ -2,6 +2,23 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](https://semver.org/).
 
+## [Unreleased]
+### Qo'shildi
+- Uch tilli hujjatlar boshlang'ich tuzilmasi: `docs/uz/`, `docs/ru/`, `docs/en/`.
+- `RichStream` draftlari uchun `draft_id`, `can_stop`, `keep_on_stop` qo'llab-quvvatlashi.
+- Bot API 10.3 dagi `stopped_message_generation` update turi va router helperi.
+- Public docstring, kod commentlari va example izohlari uchun uch tilli standart.
+
+### O'zgardi
+- Loyiha qoidasi rasmiylashtirildi: har bir feature yoki behavior o'zgarishi test,
+  uch tilli docs va changelog bilan keladi.
+- `answer_ephemeral()` helperlari Bot API 10.3 dagi
+  `ephemeral_message_parameters` formatini yuboradi.
+- `BOT_API_VERSION` qiymati 10.3 ga yangilandi.
+
+### Testlar
+- Rich stream draft parametrlari, ephemeral 10.3 payloadi va yangi update turi testlandi.
+
 ## [0.4.1]
 ### Qo'shildi
 - **PyPI nashri**: `pyproject.toml` to'ldirildi (classifiers, urls, authors),

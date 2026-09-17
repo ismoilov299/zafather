@@ -4,5 +4,6 @@ include CHANGELOG.md
 include CONTRIBUTING.md
 include zafather/py.typed
 recursive-include examples *.py *.html
+recursive-include docs *.md
 exclude zafather.bundle
 global-exclude __pycache__ *.py[cod]

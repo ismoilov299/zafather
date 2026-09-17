@@ -190,7 +190,7 @@ async def main():
     expect(bool(await c(Message(msg("/start@ZafatherBot")["message"]))), "Command + @mention")
     expect(not await c(Message(msg("start")["message"])), "prefiksiz -> mos emas")
 
-    # --- Bot API 10.2 imkoniyatlari ---
+    # --- Bot API 10.3 imkoniyatlari ---
     kb2 = InlineKeyboard()
     kb2.success("Ha", "yes").danger("Yo'q", "no").row().primary("Asosiy", "main", icon="123")
     rows = kb2.to_dict()["inline_keyboard"]
@@ -228,9 +228,10 @@ async def main():
            "https://t.me/newbot/Manager/yangi_bot?name=Mening%20botim",
            "managed bot yaratish havolasi")
 
-    expect(len(UpdateType.ALL) == 26 and "managed_bot" in UpdateType.ALL
-           and "guest_message" in UpdateType.ALL and "subscription" in UpdateType.ALL,
-           f"26 ta update turi ({len(UpdateType.ALL)})")
+    expect(len(UpdateType.ALL) == 27 and "managed_bot" in UpdateType.ALL
+           and "guest_message" in UpdateType.ALL and "subscription" in UpdateType.ALL
+           and "stopped_message_generation" in UpdateType.ALL,
+           f"27 ta update turi ({len(UpdateType.ALL)})")
 
     app2 = make_app()
     handled_types = []
@@ -247,6 +248,10 @@ async def main():
     async def _s(event):
         handled_types.append("subscription")
 
+    @app2.stopped_generation()
+    async def _stop(event):
+        handled_types.append("stopped_message_generation")
+
     await app2.feed_update(Update({"update_id": 9, "managed_bot": {
         "user": {"id": 1, "is_bot": False, "first_name": "A"},
         "bot": {"id": 555, "is_bot": True, "first_name": "Child"}}}, app2.bot))
@@ -254,7 +259,11 @@ async def main():
         "message_id": 1, "date": 0, "text": "hi", "chat": {"id": 5, "type": "group"}}}, app2.bot))
     await app2.feed_update(Update({"update_id": 11, "subscription": {
         "from": {"id": 1, "is_bot": False, "first_name": "A"}}}, app2.bot))
-    expect(handled_types == ["managed_bot", "guest_message", "subscription"],
+    await app2.feed_update(Update({"update_id": 12, "stopped_message_generation": {
+        "chat": {"id": 1, "type": "private"}}}, app2.bot))
+    expect(handled_types == [
+        "managed_bot", "guest_message", "subscription", "stopped_message_generation"
+    ],
            f"yangi update turlari yo'naltirildi: {handled_types}")
 
     farm = BotFarm(Router("child"))
@@ -263,7 +272,18 @@ async def main():
     m2 = Message({"message_id": 1, "date": 0, "text": "x",
                   "chat": {"id": 5, "type": "group"}, "ephemeral_message_id": 42,
                   "from": {"id": 3, "is_bot": False, "first_name": "A"}}, app.bot)
-    expect(m2.is_ephemeral and m2.ephemeral_message_id == 42, "ephemeral xabar (10.2)")
+    expect(m2.is_ephemeral and m2.ephemeral_message_id == 42, "ephemeral xabar (10.2/10.3)")
+
+    SENT.clear()
+    await m2.answer_ephemeral("sir")
+    expect(SENT and SENT[0][1]["ephemeral_message_parameters"] == {"receiver_user_id": 3},
+           "message.answer_ephemeral(): 10.3 parametri")
+
+    SENT.clear()
+    c2 = Update(cb("x"), app.bot).event
+    await c2.answer_ephemeral("sir")
+    expect(SENT and SENT[0][1]["ephemeral_message_parameters"] == {"callback_query_id": "cb1"},
+           "callback.answer_ephemeral(): 10.3 parametri")
 
     SENT.clear()
     await m2.react("🔥")
@@ -276,4 +296,4 @@ async def main():
 
 if __name__ == "__main__":
     total = asyncio.run(main())
-    sys.exit(0 if total >= 34 else 1)
+    sys.exit(0 if total >= 36 else 1)

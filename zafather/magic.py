@@ -1,4 +1,10 @@
-"""Zafather — `F` sehrli filtri.
+"""UZ: Zafather — `F` sehrli filtri.
+RU: Zafather — магический фильтр `F`.
+EN: Zafather — magical `F` filter.
+
+UZ: Misollar:
+RU: Примеры:
+EN: Examples:
 
     F.text                      -> event.text mavjud va bo'sh emas
     F.data == "menu"            -> callback data teng
@@ -15,7 +21,10 @@ from typing import Any, Callable, Iterable
 
 
 class Magic:
-    """Atribut zanjirini lazy tarzda yig'ib, filtrga aylantiradi."""
+    """UZ: Atribut zanjirini lazy tarzda yig'ib, filtrga aylantiradi.
+    RU: Собирает цепочку атрибутов лениво и преобразует её в фильтр.
+    EN: Lazily builds an attribute chain and turns it into a filter.
+    """
 
     __slots__ = ("_resolve", "_repr")
 

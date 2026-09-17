@@ -1,11 +1,25 @@
-"""Zafather — Bot API 10.2 namunasi.
+"""UZ: Zafather — Bot API 10.2 namunasi.
+RU: Zafather — пример для Bot API 10.2.
+EN: Zafather — Bot API 10.2 example.
 
-Ko'rsatiladi:
+UZ: Ko'rsatiladi:
+RU: Показаны:
+EN: Demonstrates:
   • rangli tugmalar (primary / success / danger) va premium emoji ikonkalari
+  • цветные кнопки (primary / success / danger) и иконки premium emoji
+  • colored buttons (primary / success / danger) and premium emoji icons
   • xabarda premium (custom) emoji
+  • premium (custom) emoji в сообщениях
+  • premium (custom) emoji in messages
   • ephemeral xabarlar (guruhda faqat bitta odamga ko'rinadi)
+  • ephemeral-сообщения (видны только одному человеку в группе)
+  • ephemeral messages (visible only to one person in a group)
   • bot yaratadigan bot (managed bots + BotFarm)
+  • боты, создающие ботов (managed bots + BotFarm)
+  • bots that create bots (managed bots + BotFarm)
   • reaksiyalar, guest mode, obunalar
+  • реакции, guest mode, подписки
+  • reactions, guest mode, subscriptions
 """
 import logging
 import os

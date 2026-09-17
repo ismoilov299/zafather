@@ -1,6 +1,10 @@
-"""Zafather — klaviaturalar (Bot API 10.2).
+"""UZ: Zafather — klaviaturalar (Bot API 10.2).
+RU: Zafather — клавиатуры (Bot API 10.2).
+EN: Zafather — keyboards (Bot API 10.2).
 
-Rangli tugmalar (9.4+) va premium emoji ikonkalari qo'llab-quvvatlanadi::
+UZ: Rangli tugmalar (9.4+) va premium emoji ikonkalari qo'llab-quvvatlanadi::
+RU: Поддерживаются цветные кнопки (9.4+) и иконки premium emoji::
+EN: Colored buttons (9.4+) and premium emoji icons are supported::
 
     kb = InlineKeyboard()
     kb.success("✅ Tasdiqlash", callback_data="ok")
@@ -32,7 +36,10 @@ def _style_fields(style: Optional[str], icon: Optional[str]) -> dict:
 
 
 class BaseKeyboard:
-    """Umumiy quruvchi mantiq (qatorlar, adjust, to_dict)."""
+    """UZ: Umumiy quruvchi mantiq (qatorlar, adjust, to_dict).
+    RU: Общая логика сборки (ряды, adjust, to_dict).
+    EN: Shared builder logic (rows, adjust, to_dict).
+    """
 
     def __init__(self) -> None:
         self._rows: List[list] = [[]]
@@ -86,7 +93,10 @@ class BaseKeyboard:
 
 
 class InlineKeyboard(BaseKeyboard):
-    """Xabar ostidagi inline tugmalar."""
+    """UZ: Xabar ostidagi inline tugmalar.
+    RU: Inline-кнопки под сообщением.
+    EN: Inline buttons under a message.
+    """
 
     def add(
         self,
@@ -105,7 +115,10 @@ class InlineKeyboard(BaseKeyboard):
         icon: Optional[str] = None,
         **kwargs,
     ) -> "InlineKeyboard":
-        """Universal tugma. `style` — rang, `icon` — premium emoji id."""
+        """UZ: Universal tugma. `style` — rang, `icon` — premium emoji id.
+        RU: Универсальная кнопка. `style` — цвет, `icon` — premium emoji id.
+        EN: Universal button. `style` is the color and `icon` is the premium emoji id.
+        """
         button: dict = {"text": text}
         if callback_data is not None:
             button["callback_data"] = callback_data

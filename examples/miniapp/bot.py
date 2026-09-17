@@ -1,18 +1,28 @@
-"""Zafather — Mini App namunasi (bot + backend).
+"""UZ: Zafather — Mini App namunasi (bot + backend).
+RU: Zafather — пример Mini App (бот + backend).
+EN: Zafather — Mini App example (bot + backend).
 
-Ishga tushirish:
+UZ: Ishga tushirish:
+RU: Запуск:
+EN: Run:
 
     pip install aiohttp
     export BOT_TOKEN="..."          # @BotFather bergan token
     export APP_URL="https://sizning-domeningiz.uz"   # HTTPS shart!
     python bot.py
 
-Lokalda sinash uchun tunnel kerak (HTTPS majburiy):
+UZ: Lokalda sinash uchun tunnel kerak (HTTPS majburiy):
+RU: Для локальной проверки нужен tunnel (HTTPS обязателен):
+EN: For local testing you need a tunnel (HTTPS is required):
 
     ngrok http 8080      →   export APP_URL="https://xxxx.ngrok-free.app"
 
-Keyin @BotFather → /mybots → Bot Settings → Menu Button → APP_URL ni qo'ying,
+UZ: Keyin @BotFather → /mybots → Bot Settings → Menu Button → APP_URL ni qo'ying,
 yoki bot ishga tushganda menyu tugmasi avtomatik o'rnatiladi (pastga qarang).
+RU: Затем в @BotFather → /mybots → Bot Settings → Menu Button задайте APP_URL,
+либо при запуске бота кнопка меню будет настроена автоматически.
+EN: Then in @BotFather → /mybots → Bot Settings → Menu Button set APP_URL,
+or the menu button will be configured automatically when the bot starts.
 """
 import os
 import time

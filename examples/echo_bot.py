@@ -1,4 +1,7 @@
-"""Eng oddiy Zafather boti."""
+"""UZ: Eng oddiy Zafather boti.
+RU: Самый простой бот на Zafather.
+EN: The simplest Zafather bot.
+"""
 import os
 
 from zafather import F, Message, Zafather

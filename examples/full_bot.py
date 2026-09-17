@@ -1,4 +1,7 @@
-"""Zafather — to'liq namuna: FSM, klaviaturalar, router, middleware, xatolar."""
+"""UZ: Zafather — to'liq namuna: FSM, klaviaturalar, router, middleware, xatolar.
+RU: Zafather — полный пример: FSM, клавиатуры, router, middleware, ошибки.
+EN: Zafather — full example: FSM, keyboards, router, middleware, errors.
+"""
 import logging
 import os
 

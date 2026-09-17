@@ -1,4 +1,4 @@
-"""Zafather — **Rich Messages** (Bot API 10.1 / 10.2).
+"""Zafather — **Rich Messages** (Bot API 10.1 / 10.3).
 
 Rich message — sarlavhalar, ro'yxatlar, jadvallar, kod bloklari va yig'iladigan
 bo'limlardan iborat tuzilgan xabar. AI javoblarini oqim bilan yuborish uchun
@@ -27,6 +27,7 @@ AI javobini oqim bilan:
 from __future__ import annotations
 
 import asyncio
+import random
 import time
 from typing import Any, Dict, Iterable, List, Optional, Union
 
@@ -245,15 +246,23 @@ def markdown_rich(text: str, **kwargs) -> dict:
 
 
 class RichStream:
-    """AI javobini bo'lak-bo'lak yuborish (`sendRichMessageDraft`).
+    """UZ: AI javobini bo'lak-bo'lak yuborish (`sendRichMessageDraft`).
+    RU: Потоковая отправка AI-ответа частями (`sendRichMessageDraft`).
+    EN: Streams an AI answer in chunks (`sendRichMessageDraft`).
 
-    Har bir bo'lakda so'rov yubormaslik uchun `min_interval` (soniya) bo'yicha
-    tejaladi — Telegram'ning flood-limitiga tushmaslik uchun muhim.
+    UZ: Har bir bo'lakda so'rov yubormaslik uchun `min_interval` (soniya)
+    bo'yicha tejaladi — Telegram'ning flood-limitiga tushmaslik uchun muhim.
+    RU: Чтобы не отправлять запрос на каждый фрагмент, используется
+    `min_interval` в секундах — это важно для защиты от flood-limit.
+    EN: `min_interval` in seconds throttles draft updates so every chunk does
+    not send a request, which helps avoid Telegram flood limits.
 
         async with RichStream(bot.bot, chat_id) as stream:
             async for chunk in llm():
                 await stream.push(chunk)
-        # chiqishda yakuniy xabar avtomatik yuboriladi
+        # UZ: chiqishda yakuniy xabar avtomatik yuboriladi.
+        # RU: при выходе финальное сообщение отправляется автоматически.
+        # EN: the final message is sent automatically on exit.
     """
 
     def __init__(
@@ -261,16 +270,22 @@ class RichStream:
         bot,
         chat_id: int,
         *,
+        draft_id: Optional[int] = None,
         min_interval: float = 0.7,
         as_markdown: bool = True,
         thinking: Optional[str] = None,
+        can_stop: Optional[bool] = None,
+        keep_on_stop: Optional[bool] = None,
         **send_kwargs: Any,
     ) -> None:
         self.bot = bot
         self.chat_id = chat_id
+        self.draft_id = draft_id or random.randint(1, 2_147_483_647)
         self.min_interval = min_interval
         self.as_markdown = as_markdown
         self.thinking = thinking
+        self.can_stop = can_stop
+        self.keep_on_stop = keep_on_stop
         self.send_kwargs = send_kwargs
         self._buffer: List[str] = []
         self._last_sent = 0.0
@@ -306,13 +321,18 @@ class RichStream:
     async def _send_draft(self) -> None:
         self._last_sent = time.monotonic()
         self._dirty = False
+        payload = {
+            "chat_id": self.chat_id,
+            "draft_id": self.draft_id,
+            "rich_message": self._payload(),
+        }
+        if self.can_stop is not None:
+            payload["can_stop"] = self.can_stop
+        if self.keep_on_stop is not None:
+            payload["keep_on_stop"] = self.keep_on_stop
+        payload.update(self.send_kwargs)
         try:
-            await self.bot.call(
-                "sendRichMessageDraft",
-                chat_id=self.chat_id,
-                rich_message=self._payload(),
-                **self.send_kwargs,
-            )
+            await self.bot.call("sendRichMessageDraft", **payload)
         except asyncio.CancelledError:
             raise
         except Exception:  # noqa: BLE001 — qoralama xatosi oqimni to'xtatmasin
