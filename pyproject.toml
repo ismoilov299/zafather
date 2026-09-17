@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zafather"
-version = "0.4.1"
+version = "0.4.2"
 description = "Lightweight async Telegram bot framework | Yengil async Telegram bot framework | Легкий async-фреймворк для Telegram-ботов"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,6 +32,7 @@ classifiers = [
 
 [project.optional-dependencies]
 miniapp = ["cryptography>=41"]
+userbot = ["telethon>=1.36"]
 
 [project.urls]
 Homepage = "https://github.com/ismoilov299/zafather"
