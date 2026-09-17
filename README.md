@@ -57,6 +57,8 @@ bot.run()
 pip install zafather
 # Mini App'ning uchinchi-tomon (Ed25519) tekshiruvi kerak bo'lsa:
 pip install "zafather[miniapp]"
+# MTProto userbot kerak bo'lsa:
+pip install "zafather[userbot]"
 ```
 
 Repozitoriydan (ishlab chiqish uchun):
@@ -83,6 +85,8 @@ python bot.py
 | Filtrlar | `Command`, `Text`, `Regex`, `ChatType`, `ContentType`, `UserFilter` |
 | `F` sehrli filtr | `F.text == "salom"`, `F.data.startswith("menu:")`, `~F.photo` |
 | FSM | `StatesGroup`, `State`, `FSMContext`, Memory/JSON storage |
+| **i18n** | `I18n` middleware, `language_code` asosida tarjimalar va fallback |
+| **Userbot** | Ixtiyoriy Telethon adapteri orqali MTProto akkauntlar bilan ishlash |
 | Klaviaturalar | `InlineKeyboard`, `ReplyKeyboard`, `RemoveKeyboard`, `ForceReply` |
 | Middleware | Har bir update oldidan/keyin kod ishlatish |
 | To'liq API | Har qanday Telegram metodi: `bot.bot.any_method(...)` |
@@ -198,6 +202,55 @@ await m.react(custom_emoji_id="5368324170671202286")   # premium reaksiya
 ---
 
 ## Asosiy tushunchalar
+
+### i18n
+
+`I18n` middleware foydalanuvchining Telegram `language_code` maydonidan tilni
+tanlaydi va handlerga `_` tarjima funksiyasini uzatadi. `ru-RU` kabi qiymatlar
+`ru` tiliga normallashtiriladi; tarjima topilmasa `default_locale` ishlatiladi.
+
+```python
+from zafather import I18n
+
+i18n = I18n({
+    "uz": {"welcome": "Salom, {name}!"},
+    "ru": {"welcome": "Привет, {name}!"},
+    "en": {"welcome": "Hello, {name}!"},
+}, default_locale="en")
+bot.middleware(i18n)
+
+@bot.command("start")
+async def start(m, _):
+    await m.answer(_("welcome", name=m.from_user.first_name))
+```
+
+Handler kerak bo'lsa `locale` yoki `i18n` argumentlarini ham qabul qilishi mumkin.
+
+### Userbot (MTProto)
+
+Bot API userbotlarga kira olmaydi, shuning uchun bu imkoniyat alohida ixtiyoriy
+`Telethon` adapteri orqali ishlaydi. O'rnatish: `pip install "zafather[userbot]"`.
+
+```python
+from zafather import UserBot
+
+userbot = UserBot(
+    api_id=12345,
+    api_hash="API_HASH",
+    session="my_account",
+)
+
+@userbot.on_message(pattern="/hello")
+async def hello(event):
+    await event.respond("Salom!")
+
+await userbot.start(phone="+998901234567")
+await userbot.run_until_disconnected()
+```
+
+`api_id` va `api_hash` Telegram my.telegram.org saytidan olinadi. Session faylini
+maxfiy saqlang; uni repositoryga qo'shmang. Telethon o'rnatilmagan bo'lsa, oddiy
+Bot API qismi ishlashda davom etadi va `UserBot` ishlatilganda aniq xato beradi.
 
 ### 1. Handler e'lon qilish
 

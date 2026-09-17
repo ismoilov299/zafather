@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 ## [Unreleased]
 ### Qo'shildi
 - Uch tilli hujjatlar boshlang'ich tuzilmasi: `docs/uz/`, `docs/ru/`, `docs/en/`.
+- Optional `UserBot` adapteri: Telethon orqali MTProto akkauntlar bilan ishlash.
+- `I18n` middleware: `language_code` asosida locale tanlash va tarjimalar.
+- Optional `RedisStorage`, Stars payments, `CallbackData` va middleware yordamchilari.
 - `RichStream` draftlari uchun `draft_id`, `can_stop`, `keep_on_stop` qo'llab-quvvatlashi.
 - Bot API 10.3 dagi `stopped_message_generation` update turi va router helperi.
 - Public docstring, kod commentlari va example izohlari uchun uch tilli standart.
@@ -18,6 +21,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 
 ### Testlar
 - Rich stream draft parametrlari, ephemeral 10.3 payloadi va yangi update turi testlandi.
+
+## [0.4.2]
+### Qo'shildi
+- `UserBot` — Telethon uchun lazy-loaded MTProto adapteri va `userbot` optional extra.
 
 ## [0.4.1]
 ### Qo'shildi
