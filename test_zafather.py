@@ -32,6 +32,8 @@ from zafather import (
     MTProtoSession,
     AuthKey,
     AuthHandshake,
+    DHExchange,
+    RSAPublicKey,
     Update,
     UpdateType,
     UserBot,
@@ -494,6 +496,23 @@ async def main():
            "MTProto auth parses resPQ")
     expect(AuthHandshake.factor_pq(85) == (5, 17),
            "MTProto auth factors pq")
+    rsa = RSAPublicKey(n=(1 << 1023) + 123, e=65537)
+    expect(len(rsa.fingerprint) == 8 and rsa.fingerprint == rsa.fingerprint,
+           "MTProto RSA key derives fingerprint")
+    expect(len(rsa.encrypt(b"hello")) == rsa.size,
+           "MTProto RSA encrypts padded payload")
+    dh_request = handshake.build_req_dh_params(
+        b"fedcba9876543210", b"\x05", b"\x11", rsa.fingerprint, b"encrypted"
+    )
+    expect(dh_request[:4] == b"\xbe\xe4\x12\xd7" and len(dh_request) > 40,
+           "MTProto auth builds req_DH_params")
+    dh = DHExchange(p=23, g=5, private=6)
+    dh_payload = dh.public_value
+    peer = DHExchange(p=23, g=5, private=15)
+    expect(dh.shared_secret(peer.public_value) == peer.shared_secret(dh_payload),
+           "MTProto DH derives the same shared secret")
+    expect(DHExchange.validate_params(23, 5, peer.public_value),
+           "MTProto DH validates group parameters")
 
     class FakeEvents:
         class NewMessage:

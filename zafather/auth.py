@@ -6,10 +6,72 @@ from __future__ import annotations
 
 import math
 import secrets
+import hashlib
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 from .tl import TLReader, TLRequest
+
+
+class RSAPublicKey:
+    """UZ/RU/EN: MTProto RSA public key va PKCS#1 v1.5 encryption."""
+
+    def __init__(self, n: int, e: int = 65537) -> None:
+        if n <= 0 or e <= 1 or e % 2 == 0:
+            raise ValueError("RSA n musbat, e esa toq bo'lishi kerak")
+        self.n = n
+        self.e = e
+
+    @property
+    def size(self) -> int:
+        return (self.n.bit_length() + 7) // 8
+
+    @property
+    def fingerprint(self) -> bytes:
+        body = self.n.to_bytes(self.size, "big") + self.e.to_bytes(
+            (self.e.bit_length() + 7) // 8, "big"
+        )
+        return hashlib.sha1(body).digest()[-8:]
+
+    def encrypt(self, payload: bytes) -> bytes:
+        block_size = self.size
+        if len(payload) > block_size - 11:
+            raise ValueError("RSA payload juda katta")
+        padding_size = block_size - len(payload) - 3
+        padding = bytearray()
+        while len(padding) < padding_size:
+            padding.extend(secrets.token_bytes(padding_size - len(padding)))
+            padding = bytearray(value for value in padding if value != 0)
+        encoded = b"\x00\x02" + bytes(padding[:padding_size]) + b"\x00" + payload
+        return pow(int.from_bytes(encoded, "big"), self.e, self.n).to_bytes(block_size, "big")
+
+
+class DHExchange:
+    """UZ/RU/EN: MTProto Diffie-Hellman public/private exchange."""
+
+    def __init__(self, p: int, g: int, private: Optional[int] = None) -> None:
+        if not self.validate_params(p, g):
+            raise ValueError("DH group parametrlari noto'g'ri")
+        self.p = p
+        self.g = g
+        self.private = private or secrets.randbelow(p - 3) + 2
+
+    @property
+    def public_value(self) -> int:
+        return pow(self.g, self.private, self.p)
+
+    def shared_secret(self, peer_public: int) -> int:
+        if not self.validate_params(self.p, self.g, peer_public):
+            raise ValueError("DH peer public qiymati noto'g'ri")
+        return pow(peer_public, self.private, self.p)
+
+    @staticmethod
+    def validate_params(p: int, g: int, peer_public: Optional[int] = None) -> bool:
+        if p <= 3 or g < 2 or g >= p - 1:
+            return False
+        if not AuthHandshake._is_prime(p):
+            return False
+        return peer_public is None or 1 < peer_public < p - 1
 
 
 @dataclass(frozen=True)
@@ -30,6 +92,7 @@ class AuthHandshake:
 
     REQ_PQ = 0x60469778
     RES_PQ = 0x05162463
+    REQ_DH_PARAMS = 0xD712E4BE
 
     def __init__(self, nonce: Optional[bytes] = None) -> None:
         self.nonce = nonce or secrets.token_bytes(16)
@@ -38,6 +101,30 @@ class AuthHandshake:
 
     def build_req_pq(self) -> bytes:
         return TLRequest(self.REQ_PQ).raw(self.nonce).to_bytes()
+
+    def build_req_dh_params(
+        self,
+        server_nonce: bytes,
+        p: bytes,
+        q: bytes,
+        fingerprint: bytes,
+        encrypted_data: bytes,
+    ) -> bytes:
+        if len(server_nonce) != 16 or len(fingerprint) != 8:
+            raise ValueError("server_nonce 16 bayt, fingerprint 8 bayt bo'lishi kerak")
+        fingerprint_value = int.from_bytes(fingerprint, "little")
+        if fingerprint_value >= 1 << 63:
+            fingerprint_value -= 1 << 64
+        return (
+            TLRequest(self.REQ_DH_PARAMS)
+            .raw(self.nonce)
+            .raw(server_nonce)
+            .bytes(p)
+            .bytes(q)
+            .int64(fingerprint_value)
+            .bytes(encrypted_data)
+            .to_bytes()
+        )
 
     def parse_res_pq(self, payload: bytes) -> ResPQ:
         reader = TLReader(payload)

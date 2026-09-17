@@ -282,6 +282,9 @@ bilan yoziladi.
 
 Auth handshake’ning boshlang'ich bosqichi `AuthHandshake` orqali mavjud:
 `req_pq` yaratish, `resPQ` parse qilish va `pq` ni faktorlash.
+RSA fingerprint/PKCS#1 encryption, DH public value va shared secret uchun
+`RSAPublicKey` hamda `DHExchange` mavjud; `req_DH_params` builderi ham shu
+handshake qatlamiga kiradi.
 
 ### 1. Handler e'lon qilish
 

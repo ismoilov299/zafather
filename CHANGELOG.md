@@ -11,6 +11,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 - `MTProtoSession`: auth key, DC, server salt va user ID uchun atomic persistence.
 - `AuthKey`: MTProto 2.0 msg_key derivation va AES-IGE encrypt/decrypt.
 - `AuthHandshake`: `req_pq`, `resPQ` parser va `pq` factorization.
+- `RSAPublicKey`, `DHExchange` va `req_DH_params` auth handshake primitives.
 - `I18n` middleware: `language_code` asosida locale tanlash va tarjimalar.
 - Optional `RedisStorage`, Stars payments, `CallbackData` va middleware yordamchilari.
 - UserBot: credential validation, lifecycle helpers, event aliases va async context manager.
