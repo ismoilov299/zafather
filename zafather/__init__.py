@@ -25,6 +25,7 @@ bots that create bots, ephemeral messages, guest mode, reactions, subscriptions.
 from .app import Zafather
 from .bot import Bot, InputFile, NetworkError, TelegramError
 from .callback_data import CallbackData
+from .crypto import AuthKey
 from .enums import (
     BOT_API_VERSION,
     ButtonStyle,
@@ -130,6 +131,7 @@ __all__ = [
     # UZ: asosiy / RU: основные / EN: core
     "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
     "MTProtoClient", "EventBuilder", "Events",
+    "AuthKey",
     "TLReader", "TLWriter", "TLRequest",
     "AbridgedTransport", "MTProtoTransportError",
     "MTProtoSession",

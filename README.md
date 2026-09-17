@@ -275,6 +275,11 @@ DC host/port `dc_host=` va `dc_port=` bilan almashtiriladi.
 Auth key, DC, server salt va user ID `MTProtoSession` orqali session faylida
 saqlanadi.
 
+MTProto 2.0 uchun `AuthKey` AES-IGE encryption, `auth_key_id` va `msg_key`
+derivationni bajaradi. Kriptografiya faqat userbot extra orqali o'rnatiladi:
+`pip install "zafather[userbot]"`. Session fayli imkon qadar `0600` permission
+bilan yoziladi.
+
 ### 1. Handler e'lon qilish
 
 ```python

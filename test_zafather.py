@@ -30,6 +30,7 @@ from zafather import (
     TLRequest,
     AbridgedTransport,
     MTProtoSession,
+    AuthKey,
     Update,
     UpdateType,
     UserBot,
@@ -471,6 +472,13 @@ async def main():
            "MTProto session persists auth state")
     loaded_session.clear()
     expect(not loaded_session.path.exists(), "MTProto session clears credentials")
+
+    auth_key = AuthKey(bytes(range(256)))
+    encrypted = auth_key.encrypt(b"0123456789abcdef", outgoing=False)
+    expect(auth_key.decrypt(encrypted) == b"0123456789abcdef",
+           "MTProto AES-IGE encrypts and decrypts payloads")
+    expect(len(auth_key.auth_key_id) == 8 and len(encrypted) > 24,
+           "MTProto auth key derives key id and encrypted envelope")
 
     class FakeEvents:
         class NewMessage:

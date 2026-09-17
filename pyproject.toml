@@ -32,7 +32,7 @@ classifiers = [
 
 [project.optional-dependencies]
 miniapp = ["cryptography>=41"]
-userbot = []
+userbot = ["cryptography>=41"]
 
 [project.urls]
 Homepage = "https://github.com/ismoilov299/zafather"

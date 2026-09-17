@@ -53,6 +53,10 @@ class MTProtoSession:
         temporary = self.path.with_name(self.path.name + ".tmp")
         temporary.write_text(json.dumps(payload), encoding="utf-8")
         os.replace(temporary, self.path)
+        try:
+            os.chmod(self.path, 0o600)
+        except OSError:
+            pass
         return self
 
     def clear(self) -> None:
