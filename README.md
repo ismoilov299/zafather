@@ -244,8 +244,20 @@ userbot = UserBot(
 async def hello(event):
     await event.respond("Salom!")
 
-await userbot.start(phone="+998901234567")
-await userbot.run_until_disconnected()
+await userbot.run()
+```
+
+Event decoratorlari uchun `on_new_message()` va `on_callback_query()` aliaslari,
+manual boshqaruv uchun `add_handler()` / `remove_handler()` ham mavjud. Sessionni
+avtomatik yopish uchun `async with UserBot(...) as userbot:` ishlatish mumkin.
+
+Telethon client API'sining qolgan metodlari ham to'g'ridan-to'g'ri ochiq:
+`userbot.get_messages(...)`, `userbot.send_file(...)`, `userbot.download_media(...)`.
+Universal chaqiruv yoki raw MTProto request uchun:
+
+```python
+me = await userbot.call("get_me")
+result = await userbot.invoke(SomeTelethonRequest(...))
 ```
 
 `api_id` va `api_hash` Telegram my.telegram.org saytidan olinadi. Session faylini

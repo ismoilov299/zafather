@@ -44,7 +44,7 @@ Issues = "https://github.com/ismoilov299/zafather/issues"
 zafather = "zafather.__main__:main"
 
 [tool.setuptools]
-packages = ["zafather"]
+packages = ["zafather", "zafather.storage"]
 
 [tool.setuptools.package-data]
 zafather = ["py.typed"]

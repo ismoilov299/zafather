@@ -407,6 +407,79 @@ async def main():
         userbot_ok = "telethon" in str(exc).lower()
     expect(userbot_ok, "UserBot uses optional Telethon support")
 
+    class FakeEvents:
+        class NewMessage:
+            def __init__(self, *args, **kwargs):
+                self.args = args
+                self.kwargs = kwargs
+
+        class CallbackQuery:
+            def __init__(self, *args, **kwargs):
+                self.args = args
+                self.kwargs = kwargs
+
+    class FakeClient:
+        def __init__(self):
+            self.handlers = []
+            self.started = False
+            self.disconnected = False
+
+        def on(self, event):
+            def decorator(callback):
+                self.handlers.append((event, callback))
+                return callback
+            return decorator
+
+        async def start(self, **kwargs):
+            self.started = kwargs
+            return "started"
+
+        async def run_until_disconnected(self):
+            self.disconnected = True
+            return "disconnected"
+
+        async def disconnect(self):
+            self.disconnected = True
+
+        async def send_message(self, entity, message, **kwargs):
+            return entity, message, kwargs
+
+        async def get_me(self):
+            return {"id": 1, "username": "test"}
+
+        async def __call__(self, request):
+            return {"request": request}
+
+    fake_client = FakeClient()
+    test_userbot = UserBot(
+        api_id=1, api_hash="hash", client=fake_client, events_module=FakeEvents
+    )
+
+    @test_userbot.on_new_message(pattern="/start")
+    async def userbot_start(event):
+        return event
+
+    expect(len(fake_client.handlers) == 1 and fake_client.handlers[0][0].kwargs["pattern"] == "/start",
+           "UserBot registers NewMessage handlers")
+    expect(await test_userbot.start() == "started" and await test_userbot.run() == "disconnected",
+           "UserBot lifecycle delegates to the client")
+    sent = await test_userbot.send_message("me", "hello")
+    expect(sent[0] == "me" and sent[1] == "hello", "UserBot delegates send_message")
+    called = await test_userbot.call("get_me")
+    expect(called["username"] == "test", "UserBot calls any client API method by name")
+    invoked = await test_userbot.invoke("raw-request")
+    expect(invoked["request"] == "raw-request", "UserBot invokes raw MTProto requests")
+    invalid_userbot = False
+    try:
+        UserBot(api_id=0, api_hash="hash", client=fake_client, events_module=FakeEvents)
+    except ValueError:
+        invalid_userbot = True
+    expect(invalid_userbot, "UserBot validates api_id")
+
+    async with test_userbot as active_userbot:
+        expect(active_userbot is test_userbot and fake_client.started is not None,
+               "UserBot supports async context manager")
+
     print(f"\nNatija: {ok} ta test o'tdi.")
     return ok
 

@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 - Optional `UserBot` adapteri: Telethon orqali MTProto akkauntlar bilan ishlash.
 - `I18n` middleware: `language_code` asosida locale tanlash va tarjimalar.
 - Optional `RedisStorage`, Stars payments, `CallbackData` va middleware yordamchilari.
+- UserBot: credential validation, lifecycle helpers, event aliases va async context manager.
 - `RichStream` draftlari uchun `draft_id`, `can_stop`, `keep_on_stop` qo'llab-quvvatlashi.
 - Bot API 10.3 dagi `stopped_message_generation` update turi va router helperi.
 - Public docstring, kod commentlari va example izohlari uchun uch tilli standart.
