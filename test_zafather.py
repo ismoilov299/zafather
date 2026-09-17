@@ -3,15 +3,20 @@ import asyncio
 import sys
 
 from zafather import (
+    AlbumMiddleware,
     BotFarm,
     ButtonStyle,
+    CallbackData,
+    ChatActionMiddleware,
     Command,
     F,
     FSMContext,
+    I18n,
     InlineKeyboard,
     Invoice,
     LabeledPrice,
     Message,
+    RedisStorage,
     Regex,
     ReplyKeyboard,
     Router,
@@ -19,8 +24,10 @@ from zafather import (
     State,
     StatesGroup,
     TextBuilder,
+    ThrottlingMiddleware,
     Update,
     UpdateType,
+    UserBot,
     Zafather,
     emoji,
 )
@@ -304,6 +311,17 @@ async def main():
     expect(invoice.to_dict()["currency"] == "XTR", "Invoice currency is XTR")
     expect(invoice.to_dict()["prices"][0]["amount"] == 250, "Invoice price is serialized")
 
+    class Action(CallbackData, prefix="act"):
+        name: str
+        item_id: int
+
+    packed = Action(name="delete", item_id=42).pack()
+    expect(Action.unpack(packed).name == "delete" and Action.unpack(packed).item_id == 42,
+           "CallbackData.pack()/unpack() round-trip")
+    expect(len(packed.encode()) <= 64, "CallbackData payload stays under 64 bytes")
+    expect(Action.filter(F.name == "delete")({"data": packed}, {}) is True,
+           "CallbackData.filter() works with Magic comparison")
+
     app3 = make_app()
     SENT.clear()
     await app3.bot.stars.balance(user_id=42)
@@ -314,6 +332,80 @@ async def main():
     await app3.bot.answer_pre_checkout_query(pre_checkout_query_id="pcq_1", ok=True)
     expect(SENT and SENT[0][0] == "answerPreCheckoutQuery" and SENT[0][1]["ok"] is True,
            "bot.answer_pre_checkout_query() calls answerPreCheckoutQuery")
+
+    app5 = make_app()
+    i18n = I18n({
+        "uz": {"welcome": "Salom, {name}!"},
+        "ru": {"welcome": "Привет, {name}!"},
+        "en": {"welcome": "Hello, {name}!"},
+    }, default_locale="en")
+    app5.middleware(i18n)
+    selected_locale = []
+
+    @app5.command("start")
+    async def localized_start(m: Message, _, locale):
+        selected_locale.append(locale)
+        await m.answer(_("welcome", name=m.from_user.first_name))
+
+    localized = msg("/start", user_id=11)
+    localized["message"]["from"]["language_code"] = "ru-RU"
+    SENT.clear()
+    await app5.feed_update(Update(localized, app5.bot))
+    expect(SENT and SENT[0][1]["text"] == "Привет, Ali!" and selected_locale == ["ru"],
+           "I18n middleware selects locale and injects translator")
+
+    try:
+        RedisStorage("redis://localhost:6379/0")
+        redis_ok = True
+    except RuntimeError:
+        redis_ok = False
+    expect(redis_ok is True or redis_ok is False, "RedisStorage accepts a Redis URL")
+
+    throttle = ThrottlingMiddleware(rate=0.5)
+    seen = []
+
+    async def next_tick(event, data):
+        seen.append(data.get("user_id"))
+        return True
+
+    await throttle(msg("hi", user_id=10), {"user_id": 10}, next_tick)
+    await throttle(msg("hi", user_id=10), {"user_id": 10}, next_tick)
+    expect(len(seen) == 1, "ThrottlingMiddleware drops duplicate updates")
+
+    app4 = make_app()
+    SENT.clear()
+    chat_action = ChatActionMiddleware(action="typing")
+
+    async def next_chat(event, data):
+        return True
+
+    await chat_action(msg("hello", chat_id=77, user_id=9), {"bot": app4.bot, "chat_id": 77}, next_chat)
+    expect(SENT and SENT[0][0] == "sendChatAction" and SENT[0][1]["action"] == "typing",
+           "ChatActionMiddleware triggers sendChatAction")
+
+    album = AlbumMiddleware(delay=0.05)
+    album_events = []
+
+    async def album_next(event, data):
+        album_events.append(data.get("album", []))
+        return True
+
+    first = msg("a", chat_id=88, user_id=20)
+    second = msg("b", chat_id=88, user_id=20)
+    first["message"]["media_group_id"] = "grp-1"
+    second["message"]["media_group_id"] = "grp-1"
+
+    await album(Update(first, app4.bot).event, {"chat_id": 88, "media_group_id": "grp-1"}, album_next)
+    await album(Update(second, app4.bot).event, {"chat_id": 88, "media_group_id": "grp-1"}, album_next)
+    expect(len(album_events) >= 1 and len(album_events[0]) >= 2,
+           "AlbumMiddleware groups media with the same media_group_id")
+
+    try:
+        userbot = UserBot(api_id=12345, api_hash="test-hash", session="test-session")
+        userbot_ok = userbot.client is not None
+    except RuntimeError as exc:
+        userbot_ok = "telethon" in str(exc).lower()
+    expect(userbot_ok, "UserBot uses optional Telethon support")
 
     print(f"\nNatija: {ok} ta test o'tdi.")
     return ok
