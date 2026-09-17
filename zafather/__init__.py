@@ -62,6 +62,7 @@ from .keyboards import (
 )
 from .magic import F
 from .managed import BotFarm, ManagedBots
+from .payments import Invoice, LabeledPrice, StarsAPI
 from .rich import RichMessage, RichStream, markdown_rich
 from .router import Router, SkipHandler
 from .text import (
@@ -137,6 +138,8 @@ __all__ = [
     "link", "mention", "quote", "escape", "TextBuilder", "strip_custom_emoji", "SafeHTML",
     # UZ: boshqariladigan botlar / RU: управляемые боты / EN: managed bots
     "ManagedBots", "BotFarm",
+    # UZ: to'lovlar / RU: платежи / EN: payments
+    "Invoice", "LabeledPrice", "StarsAPI",
     # UZ: tuzilgan xabarlar / RU: rich-сообщения / EN: rich messages
     "RichMessage", "RichStream", "markdown_rich",
     # Mini App

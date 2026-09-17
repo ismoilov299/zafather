@@ -12,6 +12,7 @@ from typing import Any, Optional, Union
 
 import aiohttp
 
+from .payments import StarsAPI
 from .types import Message, TelegramObject, Update, User
 
 log = logging.getLogger("zafather.bot")
@@ -111,6 +112,7 @@ class Bot:
         self.timeout = timeout
         self._session: Optional[aiohttp.ClientSession] = None
         self._me: Optional[User] = None
+        self.stars = StarsAPI(self)
 
     # --- UZ: sessiya / RU: сессия / EN: session --------------------------------
     async def session(self) -> aiohttp.ClientSession:
@@ -252,6 +254,18 @@ class Bot:
         if self._me is None:
             self._me = await self.request("getMe")
         return self._me
+
+    async def answer_pre_checkout_query(self, pre_checkout_query_id: str, ok: bool = True, **kwargs):
+        """UZ: `pre_checkout_query` uchun avtomatik javob.
+        RU: Автоответ для `pre_checkout_query`.
+        EN: Automatic answer for `pre_checkout_query`.
+        """
+        return await self.request(
+            "answerPreCheckoutQuery",
+            pre_checkout_query_id=pre_checkout_query_id,
+            ok=ok,
+            **kwargs,
+        )
 
     async def __aenter__(self) -> "Bot":
         return self

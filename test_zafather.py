@@ -9,6 +9,8 @@ from zafather import (
     F,
     FSMContext,
     InlineKeyboard,
+    Invoice,
+    LabeledPrice,
     Message,
     Regex,
     ReplyKeyboard,
@@ -289,6 +291,29 @@ async def main():
     await m2.react("🔥")
     expect(SENT and SENT[0][1]["reaction"] == [{"type": "emoji", "emoji": "🔥"}],
            "message.react()")
+
+    invoice = Invoice(
+        title="VIP access",
+        description="One month access",
+        start_parameter="stars_1",
+        currency="XTR",
+        prices=[LabeledPrice(label="Access", amount=250)],
+        provider_data=None,
+        payload="vip_1",
+    )
+    expect(invoice.to_dict()["currency"] == "XTR", "Invoice currency is XTR")
+    expect(invoice.to_dict()["prices"][0]["amount"] == 250, "Invoice price is serialized")
+
+    app3 = make_app()
+    SENT.clear()
+    await app3.bot.stars.balance(user_id=42)
+    expect(SENT and SENT[0][0] == "getStarBalance" and SENT[0][1]["user_id"] == 42,
+           "bot.stars.balance() calls getStarBalance")
+
+    SENT.clear()
+    await app3.bot.answer_pre_checkout_query(pre_checkout_query_id="pcq_1", ok=True)
+    expect(SENT and SENT[0][0] == "answerPreCheckoutQuery" and SENT[0][1]["ok"] is True,
+           "bot.answer_pre_checkout_query() calls answerPreCheckoutQuery")
 
     print(f"\nNatija: {ok} ta test o'tdi.")
     return ok
