@@ -31,6 +31,7 @@ from zafather import (
     AbridgedTransport,
     MTProtoSession,
     AuthKey,
+    AuthHandshake,
     Update,
     UpdateType,
     UserBot,
@@ -479,6 +480,20 @@ async def main():
            "MTProto AES-IGE encrypts and decrypts payloads")
     expect(len(auth_key.auth_key_id) == 8 and len(encrypted) > 24,
            "MTProto auth key derives key id and encrypted envelope")
+
+    handshake = AuthHandshake(nonce=b"0123456789abcdef")
+    req_pq = handshake.build_req_pq()
+    expect(req_pq[:4] == b"x\x97F`" and req_pq[4:] == b"0123456789abcdef",
+           "MTProto auth builds req_pq")
+    response_writer = TLWriter().uint32(0x05162463)
+    response_writer.raw(b"0123456789abcdef").raw(b"fedcba9876543210")
+    response_writer.bytes((5 * 17).to_bytes(2, "big"))
+    response_writer.vector([123456789], encoder="int64")
+    parsed = handshake.parse_res_pq(response_writer.to_bytes())
+    expect(parsed.server_nonce == b"fedcba9876543210" and parsed.pq == 85,
+           "MTProto auth parses resPQ")
+    expect(AuthHandshake.factor_pq(85) == (5, 17),
+           "MTProto auth factors pq")
 
     class FakeEvents:
         class NewMessage:

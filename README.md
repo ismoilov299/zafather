@@ -280,6 +280,9 @@ derivationni bajaradi. Kriptografiya faqat userbot extra orqali o'rnatiladi:
 `pip install "zafather[userbot]"`. Session fayli imkon qadar `0600` permission
 bilan yoziladi.
 
+Auth handshake’ning boshlang'ich bosqichi `AuthHandshake` orqali mavjud:
+`req_pq` yaratish, `resPQ` parse qilish va `pq` ni faktorlash.
+
 ### 1. Handler e'lon qilish
 
 ```python
