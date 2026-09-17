@@ -270,7 +270,8 @@ result = await userbot.invoke(request.to_bytes())
 `api_id` va `api_hash` Telegram my.telegram.org saytidan olinadi. Session faylini
 maxfiy saqlang; uni repositoryga qo'shmang. MTProto auth, encryption va TL schema
 qatlamlari mustaqil ravishda rivojlantirilmoqda; custom transport backendini
-`transport=` orqali ulash mumkin.
+`transport=` orqali ulash mumkin. Default transport MTProto Abridged TCP bo'lib,
+DC host/port `dc_host=` va `dc_port=` bilan almashtiriladi.
 
 ### 1. Handler e'lon qilish
 

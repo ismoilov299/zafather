@@ -88,6 +88,7 @@ from .text import (
     underline,
 )
 from .tl import TLReader, TLRequest, TLWriter
+from .transport import AbridgedTransport, MTProtoTransportError
 from .webapp import (
     MiniApp,
     WebAppAuthError,
@@ -129,6 +130,7 @@ __all__ = [
     "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
     "MTProtoClient", "EventBuilder", "Events",
     "TLReader", "TLWriter", "TLRequest",
+    "AbridgedTransport", "MTProtoTransportError",
     # UZ: tiplar / RU: типы / EN: types
     "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
     "TelegramObject", "ManagedBotUpdated", "BusinessConnection",

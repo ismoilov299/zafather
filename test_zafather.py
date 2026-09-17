@@ -28,6 +28,7 @@ from zafather import (
     TLReader,
     TLWriter,
     TLRequest,
+    AbridgedTransport,
     Update,
     UpdateType,
     UserBot,
@@ -406,6 +407,8 @@ async def main():
     userbot = UserBot(api_id=12345, api_hash="test-hash", session="test-session")
     expect(userbot.client is not None and userbot.client.__class__.__name__ == "MTProtoClient",
            "UserBot uses the independent MTProto client")
+    expect(userbot.client.transport.__class__.__name__ == "AbridgedTransport",
+           "MTProtoClient uses Abridged transport by default")
 
     writer = TLWriter()
     writer.int32(-42).int64(9876543210).string("salom").bytes(b"abc")
@@ -417,6 +420,42 @@ async def main():
     request = TLRequest(0x12345678).int32(7).string("hello").to_bytes()
     expect(request[:4] == b"xV4\x12" and len(request) == 16,
            "TLRequest serializes constructor and fields")
+
+    class FakeReader:
+        def __init__(self, data):
+            self.data = bytearray(data)
+
+        async def readexactly(self, size):
+            value = bytes(self.data[:size])
+            del self.data[:size]
+            return value
+
+    class FakeWriter:
+        def __init__(self):
+            self.data = bytearray()
+            self.closed = False
+
+        def write(self, data):
+            self.data.extend(data)
+
+        async def drain(self):
+            return None
+
+        def close(self):
+            self.closed = True
+
+        async def wait_closed(self):
+            return None
+
+    fake_writer = FakeWriter()
+    transport = AbridgedTransport(
+        open_connection=lambda host, port: (FakeReader(b"\x01x"), fake_writer)
+    )
+    await transport.connect()
+    received = await transport.receive()
+    await transport.send(b"abc")
+    expect(received == b"x" and fake_writer.data == b"\xef\x01abc",
+           "Abridged transport frames MTProto packets")
 
     class FakeEvents:
         class NewMessage:

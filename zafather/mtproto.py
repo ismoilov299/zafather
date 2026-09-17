@@ -8,6 +8,8 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Tuple
 
+from .transport import AbridgedTransport
+
 
 @dataclass(frozen=True)
 class EventBuilder:
@@ -55,6 +57,11 @@ class MTProtoClient:
         self.api_id = api_id
         self.api_hash = api_hash
         self.session = session
+        if transport is None:
+            transport = AbridgedTransport(
+                host=kwargs.pop("dc_host", "149.154.167.50"),
+                port=kwargs.pop("dc_port", 443),
+            )
         self.transport = transport
         self.options = kwargs
         self.handlers: List[Tuple[EventBuilder, Callable]] = []
@@ -110,7 +117,8 @@ class MTProtoClient:
                 "MTProto TL schema va auth transport hali ulanmagan; "
                 "transport='...' backendini bering"
             )
-        result = self.transport.invoke(request, *args, **kwargs)
+        payload = request.to_bytes() if hasattr(request, "to_bytes") else request
+        result = self.transport.invoke(payload, *args, **kwargs)
         return await result if asyncio.iscoroutine(result) else result
 
 
