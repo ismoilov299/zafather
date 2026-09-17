@@ -24,6 +24,7 @@ bots that create bots, ephemeral messages, guest mode, reactions, subscriptions.
 
 from .app import Zafather
 from .bot import Bot, InputFile, NetworkError, TelegramError
+from .callback_data import CallbackData
 from .enums import (
     BOT_API_VERSION,
     ButtonStyle,
@@ -53,6 +54,8 @@ from .filters import (
     UserFilter,
 )
 from .fsm import BaseStorage, FSMContext, JSONStorage, MemoryStorage, State, StatesGroup
+from .i18n import I18n
+from .storage import RedisStorage
 from .keyboards import (
     ForceReply,
     InlineKeyboard,
@@ -62,6 +65,7 @@ from .keyboards import (
 )
 from .magic import F
 from .managed import BotFarm, ManagedBots
+from .middlewares import AlbumMiddleware, ChatActionMiddleware, ThrottlingMiddleware
 from .payments import Invoice, LabeledPrice, StarsAPI
 from .rich import RichMessage, RichStream, markdown_rich
 from .router import Router, SkipHandler
@@ -111,15 +115,16 @@ from .types import (
     Update,
     User,
 )
+from .userbot import UserBot
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 __bot_api__ = BOT_API_VERSION
 __author__ = "ismoilov299"
 __license__ = "MIT"
 
 __all__ = [
     # UZ: asosiy / RU: основные / EN: core
-    "Zafather", "Bot", "Router", "SkipHandler", "F",
+    "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
     # UZ: tiplar / RU: типы / EN: types
     "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
     "TelegramObject", "ManagedBotUpdated", "BusinessConnection",
@@ -130,7 +135,8 @@ __all__ = [
     "StateFilter", "Service", "Ephemeral", "Premium", "HasCustomEmoji",
     "IsPrivate", "IsGroup",
     # FSM
-    "State", "StatesGroup", "FSMContext", "MemoryStorage", "JSONStorage", "BaseStorage",
+    "State", "StatesGroup", "FSMContext", "MemoryStorage", "JSONStorage", "RedisStorage", "BaseStorage",
+    "I18n",
     # UZ: klaviaturalar / RU: клавиатуры / EN: keyboards
     "InlineKeyboard", "ReplyKeyboard", "RemoveKeyboard", "ForceReply", "confirm_keyboard",
     # UZ: matn va premium emoji / RU: текст и premium emoji / EN: text and premium emoji
@@ -138,6 +144,8 @@ __all__ = [
     "link", "mention", "quote", "escape", "TextBuilder", "strip_custom_emoji", "SafeHTML",
     # UZ: boshqariladigan botlar / RU: управляемые боты / EN: managed bots
     "ManagedBots", "BotFarm",
+    # UZ: middleware / RU: middleware / EN: middleware
+    "ThrottlingMiddleware", "ChatActionMiddleware", "AlbumMiddleware",
     # UZ: to'lovlar / RU: платежи / EN: payments
     "Invoice", "LabeledPrice", "StarsAPI",
     # UZ: tuzilgan xabarlar / RU: rich-сообщения / EN: rich messages
