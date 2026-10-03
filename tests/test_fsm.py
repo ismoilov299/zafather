@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 
 import pytest
 
@@ -9,6 +10,7 @@ from zafather import (
     FSMStrategy,
     JSONStorage,
     MemoryStorage,
+    OptionalDependencyError,
     RedisStorage,
     State,
     StatesGroup,
@@ -138,5 +140,13 @@ async def test_redis_storage_with_injected_client() -> None:
 
 
 def test_redis_storage_from_url() -> None:
+    pytest.importorskip("redis.asyncio")
     storage = RedisStorage("redis://localhost:6379/0")
     assert storage.client is not None
+
+
+def test_redis_storage_reports_missing_dependency(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "redis", None)
+    monkeypatch.setitem(sys.modules, "redis.asyncio", None)
+    with pytest.raises(OptionalDependencyError, match="redis"):
+        RedisStorage("redis://localhost:6379/0")
