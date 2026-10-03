@@ -3,32 +3,81 @@
 Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](https://semver.org/).
 
 ## [Unreleased]
+
+## [0.5.0]
+Kutubxona toza arxitektura va SOLID tamoyillari asosida to'liq qayta yozildi.
+O'tish qo'llanmasi: [docs/uz/migration-0.5.md](docs/uz/migration-0.5.md)
+([RU](docs/ru/migration-0.5.md), [EN](docs/en/migration-0.5.md)).
+
 ### Qo'shildi
-- Uch tilli hujjatlar boshlang'ich tuzilmasi: `docs/uz/`, `docs/ru/`, `docs/en/`.
-- Mustaqil `MTProtoClient` va Telethon'siz `UserBot` foundation.
-- TL binary `TLReader`, `TLWriter` va `TLRequest` builderlari.
-- MTProto Abridged TCP transporti va default socket integration.
-- `MTProtoSession`: auth key, DC, server salt va user ID uchun atomic persistence.
-- `AuthKey`: MTProto 2.0 msg_key derivation va AES-IGE encrypt/decrypt.
-- `AuthHandshake`: `req_pq`, `resPQ` parser va `pq` factorization.
-- `RSAPublicKey`, `DHExchange` va `req_DH_params` auth handshake primitives.
-- `server_DH_params_ok` / `dh_gen_ok` parsing va completed auth key persistence.
+- `api/` qatlami: `BaseSession` / `AiohttpSession`, `PayloadBuilder`, `RetryPolicy`,
+  `TelegramAPIServer` (o'z Bot API serveringiz ham); `Bot(session=..., retry=...)`.
+- `TelegramAPIError` ierarxiyasi: `BadRequest`, `Unauthorized`, `Forbidden`,
+  `NotFound`, `Conflict`, `RetryAfter`, `ServerError`, `MigrateToChat`.
+- `Dispatcher`, `LongPolling`, `WebhookServer`, `Zafather.run_webhook()`, fayl
+  yuklab olish (`Bot.download()`), parallel ishlov chegarasi
+  (`max_concurrent_updates`), inner middleware, filtrli xato handlerlari
+  (`ExceptionTypeFilter`).
+- FSM: `FSMStrategy` (`USER_IN_CHAT`, `CHAT`, `GLOBAL_USER`, `USER_IN_TOPIC`,
+  `CHAT_TOPIC`), forum mavzulari uchun `StorageKey.thread_id`.
+- `zafather.mtproto` — to'liq MTProto 2.0 mijozi: TL layer 229 sxemasi ishlash
+  vaqtida o'qiladi (`functions.*`, `types.*` maydon tekshiruvi bilan),
+  avtorizatsiya kaliti almashuvi, AES-IGE, kod / 2FA (SRP) / bot token bilan kirish,
+  DC migratsiyasi, FLOOD_WAIT, konteynerlar, salt va vaqt sinxronizatsiyasi,
+  uzilishda qayta ulanish va so'rovlarni qayta yuborish.
+- Update'lar: `pts` bo'shliqlarini aniqlash, `getDifference`, qayta ulangandan
+  keyin o'tkazib yuborilgan update'larni olish; eventlar: `NewMessage`,
+  `MessageEdited`, `MessageDeleted`, `CallbackQuery`, `Raw`, `StopPropagation`.
+- Entity keshi (access hash, username), HTML -> `MessageEntity` (UTF-16),
+  `FileSession` (0600, atomik), `StringSession`, `MemorySession`.
+- `UserBot`: `on_edited()`, `on_deleted()`, Telethon/Pyrogram FLOOD_WAIT
+  xatolarini tanish, TL obyektlari bilan `invoke()`.
+- CLI: `python -m zafather new NOM --userbot`, `python -m zafather version`.
+- `examples/userbot.py`; barcha namunalar testlarda oflayn ishga tushiriladi.
+- Hujjatlar: arxitektura, userbot va 0.5 ga o'tish bo'limlari (uz/ru/en).
 - `I18n` middleware: `language_code` asosida locale tanlash va tarjimalar.
 - Optional `RedisStorage`, Stars payments, `CallbackData` va middleware yordamchilari.
-- UserBot: credential validation, lifecycle helpers, event aliases va async context manager.
-- `RichStream` draftlari uchun `draft_id`, `can_stop`, `keep_on_stop` qo'llab-quvvatlashi.
-- Bot API 10.3 dagi `stopped_message_generation` update turi va router helperi.
-- Public docstring, kod commentlari va example izohlari uchun uch tilli standart.
+- `RichStream` draftlari uchun `draft_id`, `can_stop`, `keep_on_stop`;
+  Bot API 10.3 dagi `stopped_message_generation` update turi va router helperi.
+- Uch tilli hujjatlar tuzilmasi (`docs/uz/`, `docs/ru/`, `docs/en/`) va public
+  docstring, kod commentlari hamda example izohlari uchun uch tilli standart.
 
 ### O'zgardi
+- Minimal Python versiyasi 3.10; bog'liqliklar `pyproject.toml` da
+  (`requirements.txt` o'rniga, ishlab chiqish uchun `[dev]` extra).
+- `StorageKey` — `bot_id`, `chat_id`, `user_id`, `thread_id` maydonli dataclass;
+  `JSONStorage` atomik yozadi va 0.4 formatidagi fayllarni o'qiydi.
+- `RedisStorage` `zafather.fsm.storage` ga ko'chdi; `zafather.storage` eskirgan
+  (`DeprecationWarning`).
+- Javobi yo'qolgan yozuvchi so'rovlar standart holatda takrorlanmaydi
+  (`RetryPolicy(retry_unsafe_methods=...)`).
+- `parse_mode=None` formatlashni aniq o'chiradi; `entities=` bilan parse mode
+  yuborilmaydi.
+- Handler imzosi bir marta tahlil qilinadi; filtrlar oldindan kompilyatsiya qilinadi.
+- `answer_ephemeral()` Bot API 10.3 dagi `ephemeral_message_parameters`
+  formatini yuboradi; `BOT_API_VERSION` 10.3 ga yangilandi.
 - Loyiha qoidasi rasmiylashtirildi: har bir feature yoki behavior o'zgarishi test,
   uch tilli docs va changelog bilan keladi.
-- `answer_ephemeral()` helperlari Bot API 10.3 dagi
-  `ephemeral_message_parameters` formatini yuboradi.
-- `BOT_API_VERSION` qiymati 10.3 ga yangilandi.
+
+### Olib tashlandi
+- 0.4 dagi tajribaviy MTProto bo'laklari: `TLRequest`, `MTProtoSession`,
+  `AbridgedTransport`, `MTProtoTransportError`, `AuthHandshake`, `DHExchange`,
+  `ResPQ`, `ServerDHParamsOk`, `DHGenOk` (o'rnini `zafather.mtproto` egalladi).
+  `AuthKey`, `RSAPublicKey`, `TLReader`, `TLWriter` endi `zafather.mtproto` dan
+  import qilinadi.
+- `test_zafather.py`, `test_miniapp.py`, `test_rich.py` — testlar `tests/` ga ko'chdi.
+
+### Tuzatildi
+- `TelegramObject` ning `bot` maydoni bilan to'qnashuvi (`ManagedBotUpdated.bot_id`).
+- `getUpdates` timeouti to'g'ri hisoblanadi; `stop()` polling boshlanishidan oldin
+  chaqirilsa ham ishlaydi.
+- Webhook maxfiy tokeni vaqt bo'yicha xavfsiz solishtiriladi.
+- `CallbackData`: prefiks tekshiruvi va 64 bayt chegarasi; Stars metodlari.
 
 ### Testlar
-- Rich stream draft parametrlari, ephemeral 10.3 payloadi va yangi update turi testlandi.
+- pytest'ga o'tildi: oflayn testlar (Bot API — `FakeSession`, MTProto — haqiqiy
+  protokolda gaplashadigan lokal soxta Telegram serveri); ruff va mypy CI'da,
+  Python 3.10–3.14.
 
 ## [0.4.2]
 ### Qo'shildi
@@ -46,7 +95,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 - `.github/FUNDING.yml` — GitHub Sponsor tugmasi.
 
 ### O'zgardi
-- `CLAUDE.md` git kuzatuvidan chiqarildi (lokal ishlab chiqish fayli);
+- Lokal ishlab chiqish fayllari git kuzatuvidan chiqarildi;
   hissa qo'shish qo'llanmasi to'liq `CONTRIBUTING.md` da.
 - `__author__`, `__license__` `zafather/__init__.py` da.
 
