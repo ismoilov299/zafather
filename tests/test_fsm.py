@@ -150,3 +150,14 @@ def test_redis_storage_reports_missing_dependency(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setitem(sys.modules, "redis.asyncio", None)
     with pytest.raises(OptionalDependencyError, match="redis"):
         RedisStorage("redis://localhost:6379/0")
+
+
+def test_legacy_storage_import_path_warns() -> None:
+    import importlib
+
+    sys.modules.pop("zafather.storage", None)
+    sys.modules.pop("zafather.storage.redis", None)
+    with pytest.warns(DeprecationWarning, match="zafather.storage is deprecated"):
+        legacy = importlib.import_module("zafather.storage.redis")
+    assert legacy.RedisStorage is RedisStorage
+    assert importlib.import_module("zafather.storage").RedisStorage is RedisStorage

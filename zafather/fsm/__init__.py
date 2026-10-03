@@ -15,7 +15,7 @@ UZ: Misol / RU: Пример / EN: Example::
 """
 
 from .context import FSMContext
-from .state import ANY_STATE, State, StatesGroup
+from .state import ANY_STATE, State, StatesGroup, StatesGroupMeta
 from .storage import BaseStorage, JSONStorage, MemoryStorage, RedisStorage, StorageKey
 from .strategy import FSMStrategy
 
@@ -29,5 +29,6 @@ __all__ = [
     "RedisStorage",
     "State",
     "StatesGroup",
+    "StatesGroupMeta",
     "StorageKey",
 ]
