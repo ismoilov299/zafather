@@ -277,6 +277,8 @@ def test_constructor_validation() -> None:
     with pytest.raises(ValueError):
         MTProtoClient(0, "hash", session=None)
     with pytest.raises(ValueError):
+        MTProtoClient(True, "hash", session=None)
+    with pytest.raises(ValueError):
         MTProtoClient(1, " ", session=None)
     client = MTProtoClient(1, "hash", session=None, connection="intermediate")
     assert client._default_transport(DcOption(2, "127.0.0.1")).codec.tag == b"\xee\xee\xee\xee"

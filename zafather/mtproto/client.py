@@ -123,7 +123,7 @@ class MTProtoClient:
         reconnect_retries: int = 5,
         reconnect_delay: float = 1.0,
     ) -> None:
-        if not isinstance(api_id, int) or api_id <= 0:
+        if not isinstance(api_id, int) or isinstance(api_id, bool) or api_id <= 0:
             raise ValueError("api_id must be a positive integer")
         if not isinstance(api_hash, str) or not api_hash.strip():
             raise ValueError("api_hash must not be empty")
