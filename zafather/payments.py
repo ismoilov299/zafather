@@ -1,30 +1,43 @@
-"""UZ: Stars va invoice uchun qulay modullar.
-RU: Утилиты для Stars и invoice.
-EN: Helper modules for Stars and invoice payments.
+"""UZ: To'lovlar: invoice yordamchilari va Telegram Stars.
+RU: Платежи: помощники для invoice и Telegram Stars.
+EN: Payments: invoice helpers and Telegram Stars.
 """
+
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
+from .enums import Currency
+
+if TYPE_CHECKING:
+    from .bot import Bot
 
 
 class LabeledPrice:
-    """UZ: Invoice narx bloki.
-    RU: Элемент цены для invoice.
-    EN: Price entry for an invoice.
+    """UZ: Narx qatori (eng kichik birlikda, Stars uchun — yulduzlar soni).
+    RU: Строка цены (в минимальных единицах, для Stars — число звёзд).
+    EN: A price line (in the smallest units; for Stars — the number of stars).
     """
+
+    __slots__ = ("amount", "label")
 
     def __init__(self, label: str, amount: int) -> None:
         self.label = label
         self.amount = int(amount)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {"label": self.label, "amount": self.amount}
+
+    def __repr__(self) -> str:
+        return f"LabeledPrice({self.label!r}, {self.amount})"
 
 
 class Invoice:
-    """UZ: Invoice obyektini yaratish uchun yordamchi.
-    RU: Вспомогательный объект для создания invoice.
-    EN: Helper object for building an invoice.
+    """UZ: Invoice parametrlarini yig'adi. RU: Собирает параметры invoice.
+    EN: Collects invoice parameters::
+
+        await bot.send_invoice(chat_id=chat_id, **invoice.to_dict())
     """
 
     def __init__(
@@ -32,12 +45,12 @@ class Invoice:
         title: str,
         description: str,
         payload: str,
-        provider_token: Optional[str] = None,
-        currency: str = "XTR",
-        prices: Optional[Iterable[LabeledPrice]] = None,
-        provider_data: Optional[str] = None,
-        start_parameter: Optional[str] = None,
-        **kwargs: Any,
+        provider_token: str | None = None,
+        currency: str = Currency.STARS,
+        prices: Iterable[LabeledPrice] | None = None,
+        provider_data: str | None = None,
+        start_parameter: str | None = None,
+        **extra: Any,
     ) -> None:
         self.title = title
         self.description = description
@@ -47,47 +60,71 @@ class Invoice:
         self.prices = list(prices or [])
         self.provider_data = provider_data
         self.start_parameter = start_parameter
-        self.extra = kwargs
+        self.extra = extra
 
-    def to_dict(self) -> dict:
+    @classmethod
+    def stars(
+        cls, title: str, description: str, payload: str, amount: int, **extra: Any
+    ) -> Invoice:
+        """UZ: Telegram Stars (XTR) invoice'i. RU: Invoice в Telegram Stars (XTR).
+        EN: A Telegram Stars (XTR) invoice.
+        """
+        return cls(
+            title,
+            description,
+            payload,
+            currency=Currency.STARS,
+            prices=[LabeledPrice(title, amount)],
+            **extra,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
             "title": self.title,
             "description": self.description,
             "payload": self.payload,
             "currency": self.currency,
-            "prices": [item.to_dict() for item in self.prices],
+            "prices": [price.to_dict() for price in self.prices],
         }
-        if self.provider_token is not None:
-            data["provider_token"] = self.provider_token
-        if self.provider_data is not None:
-            data["provider_data"] = self.provider_data
-        if self.start_parameter is not None:
-            data["start_parameter"] = self.start_parameter
+        optional = {
+            "provider_token": self.provider_token,
+            "provider_data": self.provider_data,
+            "start_parameter": self.start_parameter,
+        }
+        data.update({key: value for key, value in optional.items() if value is not None})
         data.update(self.extra)
         return data
 
 
 class StarsAPI:
-    """UZ: Telegram Stars bilan ishlash uchun soddalashtirilgan API.
-    RU: Упрощённый API для Telegram Stars.
-    EN: Simplified API for Telegram Stars.
+    """UZ: Telegram Stars metodlari ustidagi qobiq (`bot.stars`).
+    RU: Обёртка над методами Telegram Stars (`bot.stars`).
+    EN: A wrapper over the Telegram Stars methods (`bot.stars`).
     """
 
-    def __init__(self, bot: Any) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
-    async def balance(self, user_id: Optional[int] = None, **kwargs: Any) -> Any:
-        return await self.bot.request("getStarBalance", user_id=user_id, **kwargs)
+    async def balance(self) -> Any:
+        """UZ: Botning Stars balansi (`getMyStarBalance`). RU: Баланс Stars бота.
+        EN: The bot's own Stars balance (`getMyStarBalance`).
+        """
+        return await self.bot.request("getMyStarBalance")
 
-    async def transactions(self, **kwargs: Any) -> Any:
-        return await self.bot.request("getStarTransactions", **kwargs)
-
-    async def refund(self, user_id: int, charge_id: str, **kwargs: Any) -> Any:
+    async def business_balance(self, business_connection_id: str) -> Any:
+        """UZ: Biznes akkaunt balansi. RU: Баланс бизнес-аккаунта.
+        EN: A business account balance.
+        """
         return await self.bot.request(
-            "refundStarPayment",
-            user_id=user_id,
-            charge_id=charge_id,
-            **kwargs,
+            "getBusinessAccountStarBalance", business_connection_id=business_connection_id
+        )
+
+    async def transactions(self, offset: int | None = None, limit: int | None = None) -> Any:
+        return await self.bot.request("getStarTransactions", offset=offset, limit=limit)
+
+    async def refund(self, user_id: int, charge_id: str, **params: Any) -> Any:
+        return await self.bot.request(
+            "refundStarPayment", user_id=user_id, telegram_payment_charge_id=charge_id, **params
         )
 
 

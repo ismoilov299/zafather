@@ -1,49 +1,73 @@
-"""UZ: Zafather — Telegram botlar uchun yengil async framework.
-RU: Zafather — лёгкий async-фреймворк для Telegram-ботов.
-EN: Zafather — a lightweight async framework for Telegram bots.
+"""UZ: Zafather — Telegram botlar va userbotlar uchun yengil async framework.
+RU: Zafather — лёгкий async-фреймворк для Telegram-ботов и userbot.
+EN: Zafather — a lightweight async framework for Telegram bots and userbots.
 
-UZ: Bot API **10.3** imkoniyatlarini qo'llab-quvvatlaydi: rangli tugmalar,
-premium emoji, bot yaratadigan botlar, ephemeral xabarlar, guest mode,
-reaksiyalar, obunalar va boshqalar.
-RU: Поддерживает возможности Bot API **10.3**: цветные кнопки, premium emoji,
-боты, создающие ботов, ephemeral-сообщения, guest mode, реакции, подписки.
-EN: Supports Bot API **10.3** features: colored buttons, premium emoji,
-bots that create bots, ephemeral messages, guest mode, reactions, subscriptions.
+UZ: Bot API **10.3** imkoniyatlari: rangli tugmalar, premium emoji, bot yaratadigan
+botlar, ephemeral xabarlar, guest mode, reaksiyalar, obunalar, rich xabarlar.
+RU: Возможности Bot API **10.3**: цветные кнопки, premium emoji, боты, создающие
+ботов, ephemeral-сообщения, guest mode, реакции, подписки, rich-сообщения.
+EN: Bot API **10.3** features: colored buttons, premium emoji, bots that create bots,
+ephemeral messages, guest mode, reactions, subscriptions and rich messages.
 
-    from zafather import Zafather, Message, InlineKeyboard, emoji, F
+::
 
-    bot = Zafather("TOKEN")
+    from zafather import F, InlineKeyboard, Message, Zafather, emoji
 
-    @bot.command("start")
-    async def start(m: Message):
+    app = Zafather("TOKEN")
+
+    @app.command("start")
+    async def start(message: Message):
         kb = InlineKeyboard().success("✅ Ha", "yes").danger("❌ Yo'q", "no")
-        await m.answer(f"{emoji('5368324170671202286', '🔥')} Salom!", reply_markup=kb)
+        await message.answer(f"{emoji('5368324170671202286', '🔥')} Salom!", reply_markup=kb)
 
-    bot.run()
+    app.run()
 """
 
+__version__ = "0.5.0"
+__author__ = "ismoilov299"
+__license__ = "MIT"
+
+from .api import AiohttpSession, BaseSession, RetryPolicy, TelegramAPIServer
 from .app import Zafather
-from .auth import AuthHandshake, DHExchange, DHGenOk, RSAPublicKey, ResPQ, ServerDHParamsOk
-from .bot import Bot, InputFile, NetworkError, TelegramError
+from .auth import AuthHandshake, DHExchange, DHGenOk, ResPQ, RSAPublicKey, ServerDHParamsOk
+from .bot import Bot
 from .callback_data import CallbackData
 from .crypto import AuthKey
+from .dispatcher import Dispatcher
 from .enums import (
     BOT_API_VERSION,
     ButtonStyle,
     ChatAction,
     ChatTypeEnum,
-    ContentType as ContentTypes,
     Currency,
     DiceEmoji,
     ParseMode,
     PollType,
     UpdateType,
 )
+from .enums import ContentType as ContentTypes
+from .exceptions import (
+    BadRequest,
+    Conflict,
+    Forbidden,
+    MigrateToChat,
+    NetworkError,
+    NotFound,
+    OptionalDependencyError,
+    RetryAfter,
+    ServerError,
+    TelegramAPIError,
+    TelegramError,
+    Unauthorized,
+    ZafatherError,
+)
+from .files import InputFile
 from .filters import (
     ChatType,
     Command,
     ContentType,
     Ephemeral,
+    ExceptionTypeFilter,
     Filter,
     HasCustomEmoji,
     IsGroup,
@@ -55,24 +79,33 @@ from .filters import (
     Text,
     UserFilter,
 )
-from .fsm import BaseStorage, FSMContext, JSONStorage, MemoryStorage, State, StatesGroup
-from .i18n import I18n
-from .storage import RedisStorage
-from .session import MTProtoSession
-from .keyboards import (
-    ForceReply,
-    InlineKeyboard,
-    RemoveKeyboard,
-    ReplyKeyboard,
-    confirm_keyboard,
+from .fsm import (
+    BaseStorage,
+    FSMContext,
+    FSMStrategy,
+    JSONStorage,
+    MemoryStorage,
+    RedisStorage,
+    State,
+    StatesGroup,
+    StorageKey,
 )
+from .i18n import I18n
+from .keyboards import ForceReply, InlineKeyboard, RemoveKeyboard, ReplyKeyboard, confirm_keyboard
 from .magic import F
 from .managed import BotFarm, ManagedBots
-from .middlewares import AlbumMiddleware, ChatActionMiddleware, ThrottlingMiddleware
+from .middlewares import (
+    AlbumMiddleware,
+    BaseMiddleware,
+    ChatActionMiddleware,
+    ThrottlingMiddleware,
+)
 from .mtproto import EventBuilder, Events, MTProtoClient
 from .payments import Invoice, LabeledPrice, StarsAPI
+from .polling import LongPolling
 from .rich import RichMessage, RichStream, markdown_rich
 from .router import Router, SkipHandler
+from .session import MTProtoSession
 from .text import (
     SafeHTML,
     TextBuilder,
@@ -92,6 +125,23 @@ from .text import (
 )
 from .tl import TLReader, TLRequest, TLWriter
 from .transport import AbridgedTransport, MTProtoTransportError
+from .types import (
+    BotSubscriptionUpdated,
+    BusinessConnection,
+    CallbackQuery,
+    Chat,
+    ChatBoostUpdated,
+    InlineQuery,
+    ManagedBotUpdated,
+    Message,
+    MessageGenerationStopped,
+    MessageReactionUpdated,
+    PreCheckoutQuery,
+    TelegramObject,
+    Update,
+    User,
+)
+from .userbot import UserBot
 from .webapp import (
     MiniApp,
     WebAppAuthError,
@@ -105,71 +155,149 @@ from .webapp import (
     validate,
     validate_third_party,
 )
+from .webhook import WebhookServer
 from .webserver import MiniAppServer
-from .types import (
-    BotSubscriptionUpdated,
-    BusinessConnection,
-    CallbackQuery,
-    Chat,
-    ChatBoostUpdated,
-    InlineQuery,
-    ManagedBotUpdated,
-    Message,
-    MessageGenerationStopped,
-    MessageReactionUpdated,
-    TelegramObject,
-    Update,
-    User,
-)
-from .userbot import UserBot
 
-__version__ = "0.4.2"
 __bot_api__ = BOT_API_VERSION
-__author__ = "ismoilov299"
-__license__ = "MIT"
 
 __all__ = [
-    # UZ: asosiy / RU: основные / EN: core
-    "Zafather", "Bot", "Router", "SkipHandler", "F", "CallbackData", "UserBot",
-    "MTProtoClient", "EventBuilder", "Events",
-    "AuthKey", "AuthHandshake", "ResPQ", "RSAPublicKey", "DHExchange",
-    "ServerDHParamsOk", "DHGenOk",
-    "TLReader", "TLWriter", "TLRequest",
-    "AbridgedTransport", "MTProtoTransportError",
-    "MTProtoSession",
-    # UZ: tiplar / RU: типы / EN: types
-    "Message", "CallbackQuery", "InlineQuery", "User", "Chat", "Update",
-    "TelegramObject", "ManagedBotUpdated", "BusinessConnection",
-    "MessageReactionUpdated", "ChatBoostUpdated", "BotSubscriptionUpdated",
-    "MessageGenerationStopped",
-    # UZ: filtrlar / RU: фильтры / EN: filters
-    "Filter", "Command", "Text", "Regex", "ChatType", "ContentType", "UserFilter",
-    "StateFilter", "Service", "Ephemeral", "Premium", "HasCustomEmoji",
-    "IsPrivate", "IsGroup",
-    # FSM
-    "State", "StatesGroup", "FSMContext", "MemoryStorage", "JSONStorage", "RedisStorage", "BaseStorage",
+    "BOT_API_VERSION",
+    "AbridgedTransport",
+    "AiohttpSession",
+    "AlbumMiddleware",
+    "AuthHandshake",
+    "AuthKey",
+    "BadRequest",
+    "BaseMiddleware",
+    "BaseSession",
+    "BaseStorage",
+    "Bot",
+    "BotFarm",
+    "BotSubscriptionUpdated",
+    "BusinessConnection",
+    "ButtonStyle",
+    "CallbackData",
+    "CallbackQuery",
+    "Chat",
+    "ChatAction",
+    "ChatActionMiddleware",
+    "ChatBoostUpdated",
+    "ChatType",
+    "ChatTypeEnum",
+    "Command",
+    "Conflict",
+    "ContentType",
+    "ContentTypes",
+    "Currency",
+    "DHExchange",
+    "DHGenOk",
+    "DiceEmoji",
+    "Dispatcher",
+    "Ephemeral",
+    "EventBuilder",
+    "Events",
+    "ExceptionTypeFilter",
+    "F",
+    "FSMContext",
+    "FSMStrategy",
+    "Filter",
+    "Forbidden",
+    "ForceReply",
+    "HasCustomEmoji",
     "I18n",
-    # UZ: klaviaturalar / RU: клавиатуры / EN: keyboards
-    "InlineKeyboard", "ReplyKeyboard", "RemoveKeyboard", "ForceReply", "confirm_keyboard",
-    # UZ: matn va premium emoji / RU: текст и premium emoji / EN: text and premium emoji
-    "emoji", "bold", "italic", "underline", "strike", "spoiler", "code", "pre",
-    "link", "mention", "quote", "escape", "TextBuilder", "strip_custom_emoji", "SafeHTML",
-    # UZ: boshqariladigan botlar / RU: управляемые боты / EN: managed bots
-    "ManagedBots", "BotFarm",
-    # UZ: middleware / RU: middleware / EN: middleware
-    "ThrottlingMiddleware", "ChatActionMiddleware", "AlbumMiddleware",
-    # UZ: to'lovlar / RU: платежи / EN: payments
-    "Invoice", "LabeledPrice", "StarsAPI",
-    # UZ: tuzilgan xabarlar / RU: rich-сообщения / EN: rich messages
-    "RichMessage", "RichStream", "markdown_rich",
-    # Mini App
-    "validate", "validate_third_party", "is_valid", "parse_init_data",
-    "WebAppInitData", "WebAppAuthError", "WebAppData", "MiniApp", "MiniAppServer",
-    "direct_link", "main_app_link", "attach_link",
-    # UZ: konstantalar / RU: константы / EN: constants
-    "ButtonStyle", "UpdateType", "ContentTypes", "ChatAction", "ParseMode",
-    "ChatTypeEnum", "Currency", "DiceEmoji", "PollType", "BOT_API_VERSION",
-    # UZ: boshqa / RU: прочее / EN: other
-    "InputFile", "TelegramError", "NetworkError",
-    "__version__", "__bot_api__",
+    "InlineKeyboard",
+    "InlineQuery",
+    "InputFile",
+    "Invoice",
+    "IsGroup",
+    "IsPrivate",
+    "JSONStorage",
+    "LabeledPrice",
+    "LongPolling",
+    "MTProtoClient",
+    "MTProtoSession",
+    "MTProtoTransportError",
+    "ManagedBotUpdated",
+    "ManagedBots",
+    "MemoryStorage",
+    "Message",
+    "MessageGenerationStopped",
+    "MessageReactionUpdated",
+    "MigrateToChat",
+    "MiniApp",
+    "MiniAppServer",
+    "NetworkError",
+    "NotFound",
+    "OptionalDependencyError",
+    "ParseMode",
+    "PollType",
+    "PreCheckoutQuery",
+    "Premium",
+    "RSAPublicKey",
+    "RedisStorage",
+    "Regex",
+    "RemoveKeyboard",
+    "ReplyKeyboard",
+    "ResPQ",
+    "RetryAfter",
+    "RetryPolicy",
+    "RichMessage",
+    "RichStream",
+    "Router",
+    "SafeHTML",
+    "ServerDHParamsOk",
+    "ServerError",
+    "Service",
+    "SkipHandler",
+    "StarsAPI",
+    "State",
+    "StateFilter",
+    "StatesGroup",
+    "StorageKey",
+    "TLReader",
+    "TLRequest",
+    "TLWriter",
+    "TelegramAPIError",
+    "TelegramAPIServer",
+    "TelegramError",
+    "TelegramObject",
+    "Text",
+    "TextBuilder",
+    "ThrottlingMiddleware",
+    "Unauthorized",
+    "Update",
+    "UpdateType",
+    "User",
+    "UserBot",
+    "UserFilter",
+    "WebAppAuthError",
+    "WebAppData",
+    "WebAppInitData",
+    "WebhookServer",
+    "Zafather",
+    "ZafatherError",
+    "__bot_api__",
+    "__version__",
+    "attach_link",
+    "bold",
+    "code",
+    "confirm_keyboard",
+    "direct_link",
+    "emoji",
+    "escape",
+    "is_valid",
+    "italic",
+    "link",
+    "main_app_link",
+    "markdown_rich",
+    "mention",
+    "parse_init_data",
+    "pre",
+    "quote",
+    "spoiler",
+    "strike",
+    "strip_custom_emoji",
+    "underline",
+    "validate",
+    "validate_third_party",
 ]

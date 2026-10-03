@@ -1,87 +1,50 @@
-"""UZ: Zafather — Telegram Bot API klienti.
-RU: Zafather — клиент Telegram Bot API.
-EN: Zafather — Telegram Bot API client.
+"""UZ: Telegram Bot API klienti.
+RU: Клиент Telegram Bot API.
+EN: Telegram Bot API client.
 """
+
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
-from typing import Any, Optional, Union
+import re
+import shutil
+from collections.abc import Awaitable, Callable
+from types import TracebackType
+from typing import IO, TYPE_CHECKING, Any, Union
 
-import aiohttp
-
+from .api import PRODUCTION, AiohttpSession, BaseSession, PayloadBuilder, RetryPolicy
+from .api.server import TelegramAPIServer
+from .exceptions import (
+    NetworkError,
+    RetryAfter,
+    ServerError,
+    TelegramAPIError,
+    TelegramError,
+    api_error_from_response,
+)
+from .files import InputFile
 from .payments import StarsAPI
-from .types import Message, TelegramObject, Update, User
+from .types import TelegramObject, User, wrap_result
+
+if TYPE_CHECKING:
+    from .rich import RichStream
 
 log = logging.getLogger("zafather.bot")
 
-#: UZ: Matn yuboradigan metodlar — ularga parse_mode avtomatik qo'shiladi.
-#: RU: Методы отправки текста — к ним автоматически добавляется parse_mode.
-#: EN: Text-sending methods — parse_mode is attached to them automatically.
-_PARSE_MODE_METHODS = {
-    "sendMessage",
-    "sendPhoto",
-    "sendVideo",
-    "sendAudio",
-    "sendDocument",
-    "sendAnimation",
-    "sendVoice",
-    "editMessageText",
-    "editMessageCaption",
-    "sendPoll",
-}
+_TOKEN_PATTERN = re.compile(r"^\d+:\S+$")
+
+Destination = Union[str, "os.PathLike[str]", IO[bytes]]
 
 
-class TelegramError(Exception):
-    """UZ: Telegram API xatosi.
-    RU: Ошибка Telegram API.
-    EN: Telegram API error.
+def to_camel_case(name: str) -> str:
+    """UZ: snake_case nomni camelCase ga o'giradi (`send_message` -> `sendMessage`).
+    RU: Преобразует имя из snake_case в camelCase.
+    EN: Converts a snake_case name to camelCase.
     """
-
-    def __init__(self, method: str, code: int, description: str, parameters: dict = None):
-        self.method = method
-        self.code = code
-        self.description = description
-        self.parameters = parameters or {}
-        super().__init__(f"[{code}] {method}: {description}")
-
-
-class NetworkError(Exception):
-    """UZ: Tarmoq bilan bog'liq xato.
-    RU: Ошибка, связанная с сетью.
-    EN: Network-related error.
-    """
-
-
-class InputFile:
-    """UZ: Lokal fayl yoki baytlarni yuklash uchun.
-    RU: Для загрузки локального файла или байтов.
-    EN: For uploading a local file or raw bytes.
-
-        await m.answer_photo(InputFile("rasm.jpg"))
-    """
-
-    def __init__(self, file: Union[str, bytes, os.PathLike], filename: str = None):
-        self.file = file
-        if filename:
-            self.filename = filename
-        elif isinstance(file, (str, os.PathLike)):
-            self.filename = os.path.basename(str(file))
-        else:
-            self.filename = "file.dat"
-
-    def read(self) -> bytes:
-        if isinstance(self.file, bytes):
-            return self.file
-        with open(self.file, "rb") as f:
-            return f.read()
-
-
-def _to_camel(name: str) -> str:
     head, *rest = name.split("_")
-    return head + "".join(p.capitalize() for p in rest)
+    return head + "".join(part.capitalize() for part in rest)
 
 
 class Bot:
@@ -89,189 +52,265 @@ class Bot:
     RU: Клиент для работы с Telegram Bot API.
     EN: Client that talks to the Telegram Bot API.
 
-    UZ: Har qanday API metodini snake_case ko'rinishida chaqirish mumkin.
-    RU: Любой метод API можно вызывать в виде snake_case.
-    EN: Any API method can be called in snake_case form.::
+    UZ: Har qanday API metodini snake_case ko'rinishida chaqirish mumkin; natija
+    mos modelga o'raladi.
+    RU: Любой метод API можно вызвать в snake_case; результат оборачивается в
+    подходящую модель.
+    EN: Any API method can be called in snake_case; the result is wrapped into the
+    matching model::
 
-        await bot.send_message(chat_id=1, text="salom")   -> sendMessage
-        await bot.get_chat_member(chat_id=1, user_id=2)   -> getChatMember
+        await bot.send_message(chat_id=1, text="salom")   # -> sendMessage
+        await bot.get_chat_member(chat_id=1, user_id=2)   # -> getChatMember
+
+    UZ: `session`, `retry` va `api_url` orqali transport, qayta urinish va server
+    almashtiriladi (masalan, testlarda soxta sessiya).
+    RU: Через `session`, `retry` и `api_url` заменяются транспорт, повторы и сервер
+    (например, фейковая сессия в тестах).
+    EN: `session`, `retry` and `api_url` replace the transport, retry policy and
+    server (for example a fake session in tests).
     """
 
     def __init__(
         self,
         token: str,
-        parse_mode: Optional[str] = None,
-        api_url: str = "https://api.telegram.org",
-        timeout: int = 60,
+        parse_mode: str | None = None,
+        api_url: str | TelegramAPIServer = PRODUCTION,
+        timeout: float = 60.0,
+        *,
+        session: BaseSession | None = None,
+        retry: RetryPolicy | None = None,
     ) -> None:
-        if not token or ":" not in token:
-            raise ValueError("Token noto'g'ri. @BotFather bergan tokenni kiriting.")
+        if not isinstance(token, str) or not _TOKEN_PATTERN.match(token):
+            raise ValueError("Invalid bot token: expected '<id>:<secret>' from @BotFather")
         self.token = token
-        self.parse_mode = parse_mode
-        self.api_url = api_url.rstrip("/")
-        self.timeout = timeout
-        self._session: Optional[aiohttp.ClientSession] = None
-        self._me: Optional[User] = None
+        self.id = int(token.split(":", 1)[0])
+        self.server = (
+            api_url if isinstance(api_url, TelegramAPIServer) else TelegramAPIServer(api_url)
+        )
+        self.timeout = float(timeout)
+        self.retry = retry or RetryPolicy()
+        self.session: BaseSession = session or AiohttpSession()
+        self._owns_session = session is None
+        self._payloads = PayloadBuilder(parse_mode)
+        self._me: User | None = None
         self.stars = StarsAPI(self)
 
-    # --- UZ: sessiya / RU: сессия / EN: session --------------------------------
-    async def session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=self.timeout + 15)
-            )
-        return self._session
+    # --- UZ: sozlamalar / RU: настройки / EN: settings -----------------------------------
+    @property
+    def parse_mode(self) -> str | None:
+        return self._payloads.default_parse_mode
 
-    async def close(self) -> None:
-        if self._session and not self._session.closed:
-            await self._session.close()
+    @parse_mode.setter
+    def parse_mode(self, value: str | None) -> None:
+        self._payloads.default_parse_mode = value
 
-    # --- UZ: so'rov yuborish / RU: отправка запроса / EN: sending a request ---
-    def _prepare(self, method: str, params: dict) -> tuple[dict, dict]:
-        payload, files = {}, {}
-        for key, value in params.items():
-            if value is None:
-                continue
-            if isinstance(value, InputFile):
-                files[key] = value
-            elif hasattr(value, "to_dict") and not isinstance(value, TelegramObject):
-                payload[key] = value.to_dict()
-            elif isinstance(value, TelegramObject):
-                payload[key] = value.raw
-            else:
-                payload[key] = value
-        if method in _PARSE_MODE_METHODS and self.parse_mode and "parse_mode" not in payload:
-            payload["parse_mode"] = self.parse_mode
-        return payload, files
+    @property
+    def api_url(self) -> str:
+        return self.server.base
 
-    async def call(self, method: str, **params) -> Any:
-        """UZ: API metodini chaqirish (xom natija bilan).
-        RU: Вызов метода API (с сырым результатом).
-        EN: Call an API method (returns the raw result).
+    # --- UZ: so'rovlar / RU: запросы / EN: requests ---------------------------------------
+    def _request_timeout(self, method: str, params: dict[str, Any]) -> float:
+        if method == "getUpdates":
+            return self.timeout + float(params.get("timeout") or 0)
+        return self.timeout
+
+    def _api_error_delay(self, method: str, error: TelegramAPIError, attempt: int) -> float | None:
+        if not self.retry.can_retry(attempt):
+            return None
+        if isinstance(error, RetryAfter):
+            retry_after = error.retry_after
+            return self.retry.flood_delay(1 if retry_after is None else retry_after)
+        if (
+            isinstance(error, ServerError)
+            and self.retry.retry_server_errors
+            and self.retry.allows_resend(method, request_sent=True)
+        ):
+            return self.retry.backoff(attempt)
+        return None
+
+    def _network_error_delay(self, method: str, error: NetworkError, attempt: int) -> float | None:
+        if self.retry.can_retry(attempt) and self.retry.allows_resend(
+            method, request_sent=error.request_sent
+        ):
+            return self.retry.backoff(attempt)
+        return None
+
+    async def call(self, method: str, **params: Any) -> Any:
+        """UZ: API metodini chaqirib, xom natijani qaytaradi.
+        RU: Вызывает метод API и возвращает сырой результат.
+        EN: Calls an API method and returns the raw result.
+
+        UZ: Xatoda `TelegramAPIError` (yoki uning vorisi) yoki `NetworkError` ko'taradi.
+        RU: При ошибке выбрасывает `TelegramAPIError` (или наследника) либо `NetworkError`.
+        EN: Raises `TelegramAPIError` (or a subclass) or `NetworkError` on failure.
         """
-        url = f"{self.api_url}/bot{self.token}/{method}"
-        payload, files = self._prepare(method, params)
-        session = await self.session()
-
-        for attempt in range(4):
+        payload = self._payloads.build(method, params)
+        url = self.server.method_url(self.token, method)
+        timeout = self._request_timeout(method, params)
+        attempt = 0
+        while True:
+            attempt += 1
             try:
-                if files:
-                    form = aiohttp.FormData()
-                    for key, value in payload.items():
-                        form.add_field(
-                            key,
-                            json.dumps(value, ensure_ascii=False)
-                            if isinstance(value, (dict, list))
-                            else str(value),
-                        )
-                    for key, f in files.items():
-                        form.add_field(key, f.read(), filename=f.filename)
-                    request = session.post(url, data=form)
-                else:
-                    request = session.post(url, json=payload)
-
-                async with request as resp:
-                    data = await resp.json(content_type=None)
-            except asyncio.CancelledError:
-                raise
-            except aiohttp.ClientError as e:
-                if attempt == 3:
-                    raise NetworkError(f"{method}: {e}") from e
-                await asyncio.sleep(1.5 * (attempt + 1))
+                response = await self.session.request(url, payload, timeout=timeout)
+            except NetworkError as error:
+                delay = self._network_error_delay(method, error, attempt)
+                if delay is None:
+                    raise
+                log.warning("%s: network error (%s), retrying in %.1fs", method, error, delay)
+                await asyncio.sleep(delay)
                 continue
+            if response.get("ok"):
+                return response.get("result")
+            api_error = api_error_from_response(method, response)
+            delay = self._api_error_delay(method, api_error, attempt)
+            if delay is None:
+                raise api_error
+            log.warning("%s: %s, retrying in %.1fs", method, api_error.description, delay)
+            await asyncio.sleep(delay)
 
-            if data.get("ok"):
-                return data.get("result")
-
-            code = data.get("error_code", 0)
-            params_ = data.get("parameters") or {}
-            if code == 429 and attempt < 3:
-                retry_after = params_.get("retry_after", 2)
-                log.warning("Flood limit: %ss kutilmoqda (%s)", retry_after, method)
-                await asyncio.sleep(retry_after)
-                continue
-            raise TelegramError(method, code, data.get("description", ""), params_)
-
-        raise NetworkError(f"{method}: barcha urinishlar muvaffaqiyatsiz")
-
-    # --- UZ: natijani modelga o'rash / RU: обертка результата в модель / EN: wrap result ---
-    def _wrap(self, result: Any) -> Any:
-        if isinstance(result, dict):
-            if "message_id" in result and "chat" in result:
-                return Message(result, self)
-            if "is_bot" in result and "id" in result:
-                return User(result, self)
-            if "update_id" in result:
-                return Update(result, self)
-            return TelegramObject(result, self)
-        if isinstance(result, list):
-            return [self._wrap(item) for item in result]
-        return result
-
-    async def request(self, method: str, **params) -> Any:
+    async def request(self, method: str, **params: Any) -> Any:
         """UZ: API metodini chaqirib, natijani modelga o'raydi.
         RU: Вызывает метод API и оборачивает результат в модель.
-        EN: Calls an API method and wraps the result in a model.
+        EN: Calls an API method and wraps the result into a model.
         """
-        return self._wrap(await self.call(method, **params))
+        return wrap_result(await self.call(method, **params), self)
 
-    def __getattr__(self, name: str):
-        """UZ: bot.send_message(...) -> sendMessage. Barcha API metodlari ishlaydi.
-        RU: bot.send_message(...) -> sendMessage. Работают все методы API.
-        EN: bot.send_message(...) -> sendMessage. All API methods work this way.
-        """
+    def __getattr__(self, name: str) -> Callable[..., Awaitable[Any]]:
         if name.startswith("_"):
             raise AttributeError(name)
-        method = _to_camel(name)
+        method = to_camel_case(name)
 
-        async def api_method(**kwargs):
-            return await self.request(method, **kwargs)
+        async def api_method(**params: Any) -> Any:
+            return await self.request(method, **params)
 
         api_method.__name__ = name
+        api_method.__qualname__ = f"Bot.{name}"
         return api_method
 
-    # --- UZ: qulayliklar / RU: удобства / EN: helpers -----------------------------
-    async def send_rich(self, chat_id: int, rich, **kwargs):
-        """UZ: Rich message yuborish (Bot API 10.1+).
-        RU: Отправка rich-сообщения (Bot API 10.1+).
-        EN: Send a rich message (Bot API 10.1+).
+    # --- UZ: yordamchilar / RU: помощники / EN: helpers -----------------------------------
+    async def me(self) -> User:
+        """UZ: `getMe` natijasi (keshlanadi). RU: Результат `getMe` (кешируется).
+        EN: The `getMe` result (cached).
         """
-        payload = rich.to_dict() if hasattr(rich, "to_dict") else rich
-        return await self.request(
-            "sendRichMessage", chat_id=chat_id, rich_message=payload, **kwargs
-        )
+        if self._me is None:
+            self._me = User(await self.call("getMe"), self)
+        return self._me
 
-    def stream_rich(self, chat_id: int, **kwargs):
+    def file_url(self, file_path: str) -> str:
+        return self.server.file_url(self.token, file_path)
+
+    async def _file_path(self, file: str | TelegramObject) -> str:
+        if isinstance(file, TelegramObject):
+            if file.file_path:
+                return str(file.file_path)
+            file_id = file.file_id
+        else:
+            file_id = file
+        result = await self.call("getFile", file_id=file_id)
+        return str(result["file_path"])
+
+    async def download(
+        self,
+        file: str | TelegramObject,
+        destination: Destination | None = None,
+        *,
+        chunk_size: int = 65536,
+        timeout: float | None = None,
+    ) -> bytes | None:
+        """UZ: Faylni yuklab oladi. `destination` berilmasa baytlar qaytariladi.
+        RU: Скачивает файл. Без `destination` возвращает байты.
+        EN: Downloads a file. Without `destination` the bytes are returned.
+
+        UZ: `file` — `file_id` yoki `File`/`PhotoSize`/`Document` kabi obyekt.
+        RU: `file` — `file_id` или объект вроде `File`/`PhotoSize`/`Document`.
+        EN: `file` is a `file_id` or an object such as `File`/`PhotoSize`/`Document`.
+        """
+        file_path = await self._file_path(file)
+        if self.server.is_local:
+            return await asyncio.to_thread(_copy_local_file, file_path, destination)
+        chunks = self.session.stream(
+            self.file_url(file_path), timeout=timeout or self.timeout, chunk_size=chunk_size
+        )
+        if destination is None:
+            buffer = bytearray()
+            async for chunk in chunks:
+                buffer += chunk
+            return bytes(buffer)
+        if isinstance(destination, (str, os.PathLike)):
+            stream = await asyncio.to_thread(open, destination, "wb")
+            try:
+                async for chunk in chunks:
+                    await asyncio.to_thread(stream.write, chunk)
+            finally:
+                await asyncio.to_thread(stream.close)
+        else:
+            async for chunk in chunks:
+                destination.write(chunk)
+        return None
+
+    async def send_rich(self, chat_id: int | str, rich: Any, **kwargs: Any) -> Any:
+        """UZ: Rich xabar yuboradi (Bot API 10.1+). RU: Отправляет rich-сообщение.
+        EN: Sends a rich message (Bot API 10.1+).
+        """
+        return await self.request("sendRichMessage", chat_id=chat_id, rich_message=rich, **kwargs)
+
+    def stream_rich(self, chat_id: int | str, **kwargs: Any) -> RichStream:
         """UZ: AI javobini oqim bilan yuborish uchun `RichStream` yaratadi.
         RU: Создаёт `RichStream` для потоковой отправки ответа ИИ.
-        EN: Creates a `RichStream` to send an AI answer as a stream.
+        EN: Creates a `RichStream` that streams an AI answer.
         """
         from .rich import RichStream
 
         return RichStream(self, chat_id, **kwargs)
 
-    async def me(self) -> User:
-        if self._me is None:
-            self._me = await self.request("getMe")
-        return self._me
-
-    async def answer_pre_checkout_query(self, pre_checkout_query_id: str, ok: bool = True, **kwargs):
-        """UZ: `pre_checkout_query` uchun avtomatik javob.
-        RU: Автоответ для `pre_checkout_query`.
-        EN: Automatic answer for `pre_checkout_query`.
-        """
+    async def answer_pre_checkout_query(
+        self, pre_checkout_query_id: str, ok: bool = True, **kwargs: Any
+    ) -> Any:
         return await self.request(
-            "answerPreCheckoutQuery",
-            pre_checkout_query_id=pre_checkout_query_id,
-            ok=ok,
-            **kwargs,
+            "answerPreCheckoutQuery", pre_checkout_query_id=pre_checkout_query_id, ok=ok, **kwargs
         )
 
-    async def __aenter__(self) -> "Bot":
+    # --- UZ: hayot sikli / RU: жизненный цикл / EN: lifecycle ----------------------------
+    async def close(self) -> None:
+        """UZ: O'zi yaratgan HTTP sessiyani yopadi.
+        RU: Закрывает HTTP-сессию, если создал её сам.
+        EN: Closes the HTTP session if this client created it.
+        """
+        if self._owns_session:
+            await self.session.close()
+
+    async def __aenter__(self) -> Bot:
         return self
 
-    async def __aexit__(self, *exc) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         await self.close()
 
     def __repr__(self) -> str:
-        return f"<Bot id={self.token.split(':')[0]}>"
+        return f"<Bot id={self.id}>"
+
+
+def _copy_local_file(file_path: str, destination: Destination | None) -> bytes | None:
+    if destination is None:
+        with open(file_path, "rb") as source:
+            return source.read()
+    if isinstance(destination, (str, os.PathLike)):
+        shutil.copyfile(file_path, destination)
+        return None
+    with open(file_path, "rb") as source:
+        shutil.copyfileobj(source, destination)
+    return None
+
+
+__all__ = [
+    "Bot",
+    "InputFile",
+    "NetworkError",
+    "TelegramAPIError",
+    "TelegramError",
+    "to_camel_case",
+]

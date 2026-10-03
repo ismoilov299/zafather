@@ -1,209 +1,237 @@
-"""UZ: Zafather — klaviaturalar (Bot API 10.2).
-RU: Zafather — клавиатуры (Bot API 10.2).
-EN: Zafather — keyboards (Bot API 10.2).
+"""UZ: Zafather — klaviaturalar (rangli tugmalar va premium emoji ikonkalari bilan).
+RU: Zafather — клавиатуры (с цветными кнопками и иконками premium emoji).
+EN: Zafather — keyboards (with colored buttons and premium emoji icons).
 
-UZ: Rangli tugmalar (9.4+) va premium emoji ikonkalari qo'llab-quvvatlanadi::
-RU: Поддерживаются цветные кнопки (9.4+) и иконки premium emoji::
-EN: Colored buttons (9.4+) and premium emoji icons are supported::
+UZ: Misol / RU: Пример / EN: Example::
 
     kb = InlineKeyboard()
-    kb.success("✅ Tasdiqlash", callback_data="ok")
-    kb.danger("🗑 O'chirish", callback_data="del")
-    kb.primary("⭐️ Asosiy", callback_data="main", icon="5368324170671202286")
-    kb.row()
-    kb.copy("Promokodni nusxalash", "ZAFATHER2026")
-    await m.answer("Tanlang", reply_markup=kb)
+    kb.success("✅ Tasdiqlash", "ok").danger("🗑 O'chirish", "del")
+    kb.row().primary("⭐️ Asosiy", "main", icon="5368324170671202286")
+    kb.row().copy("Promokod", "ZAFATHER2026")
+    await message.answer("Tanlang", reply_markup=kb)
 """
+
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Any, TypeVar
 
 from .enums import ButtonStyle
 
+KeyboardT = TypeVar("KeyboardT", bound="BaseKeyboard")
 
-def _style_fields(style: Optional[str], icon: Optional[str]) -> dict:
-    """style — 'primary' | 'success' | 'danger', icon — custom_emoji_id."""
-    extra = {}
-    if style:
+#: UZ: Callback data uchun Telegram chegarasi (bayt).
+#: RU: Ограничение Telegram для callback data (байты).
+#: EN: Telegram's callback data limit (bytes).
+MAX_CALLBACK_DATA_BYTES = 64
+
+_INLINE_ACTIONS = (
+    "callback_data",
+    "url",
+    "web_app",
+    "login_url",
+    "switch_inline_query",
+    "switch_inline_query_current_chat",
+    "switch_inline_query_chosen_chat",
+    "copy_text",
+    "callback_game",
+    "pay",
+)
+
+
+def style_fields(style: str | None, icon: str | None) -> dict[str, Any]:
+    """UZ: Tugma rangi (`primary`/`success`/`danger`) va premium emoji ikonkasi.
+    RU: Цвет кнопки (`primary`/`success`/`danger`) и иконка premium emoji.
+    EN: Button color (`primary`/`success`/`danger`) and premium emoji icon.
+    """
+    fields: dict[str, Any] = {}
+    if style is not None:
         if style not in ButtonStyle.ALL:
-            raise ValueError(
-                f"style faqat {ButtonStyle.ALL} dan biri bo'lishi mumkin, berildi: {style!r}"
-            )
-        extra["style"] = style
+            raise ValueError(f"style must be one of {ButtonStyle.ALL}, got {style!r}")
+        fields["style"] = style
     if icon:
-        extra["icon_custom_emoji_id"] = icon
-    return extra
+        fields["icon_custom_emoji_id"] = icon
+    return fields
+
+
+def validate_callback_data(value: str) -> str:
+    """UZ: Callback data 1-64 bayt bo'lishi shart. RU: Callback data должна быть 1-64 байта.
+    EN: Callback data must be 1-64 bytes.
+    """
+    size = len(value.encode("utf-8"))
+    if not 1 <= size <= MAX_CALLBACK_DATA_BYTES:
+        raise ValueError(f"callback_data must be 1-{MAX_CALLBACK_DATA_BYTES} bytes, got {size}")
+    return value
+
+
+def _poll_request(poll_type: str | None) -> dict[str, Any] | None:
+    if poll_type is None:
+        return None
+    return {"type": poll_type} if poll_type else {}
 
 
 class BaseKeyboard:
-    """UZ: Umumiy quruvchi mantiq (qatorlar, adjust, to_dict).
-    RU: Общая логика сборки (ряды, adjust, to_dict).
-    EN: Shared builder logic (rows, adjust, to_dict).
+    """UZ: Qatorlar bilan ishlashning umumiy mantig'i.
+    RU: Общая логика работы с рядами.
+    EN: Shared row-building logic.
     """
 
     def __init__(self) -> None:
-        self._rows: List[list] = [[]]
+        self._rows: list[list[dict[str, Any]]] = [[]]
 
-    # --- qatorlar -------------------------------------------------------------
-    def row(self, *buttons) -> "BaseKeyboard":
-        if self._rows and not self._rows[-1]:
+    def row(self: KeyboardT, *buttons: dict[str, Any]) -> KeyboardT:
+        """UZ: Yangi qator boshlaydi (tugmalar berilsa — ular alohida qator bo'ladi).
+        RU: Начинает новый ряд (переданные кнопки образуют отдельный ряд).
+        EN: Starts a new row (given buttons form a row of their own).
+        """
+        if not self._rows[-1]:
             self._rows.pop()
         if buttons:
             self._rows.append(list(buttons))
         self._rows.append([])
         return self
 
-    def adjust(self, *sizes: int) -> "BaseKeyboard":
-        flat = [b for row in self._rows for b in row]
+    def adjust(self: KeyboardT, *sizes: int) -> KeyboardT:
+        """UZ: Tugmalarni qatorlarga qayta taqsimlaydi: `adjust(2)` yoki `adjust(3, 2)`.
+        RU: Перераспределяет кнопки по рядам: `adjust(2)` или `adjust(3, 2)`.
+        EN: Redistributes buttons into rows: `adjust(2)` or `adjust(3, 2)`.
+        """
         if not sizes:
             return self
-        rows, index, i = [], 0, 0
-        while index < len(flat):
-            size = sizes[min(i, len(sizes) - 1)]
-            rows.append(flat[index : index + size])
+        if any(size < 1 for size in sizes):
+            raise ValueError("Row sizes must be positive")
+        buttons = [button for row in self._rows for button in row]
+        rows: list[list[dict[str, Any]]] = []
+        index = 0
+        while index < len(buttons):
+            size = sizes[min(len(rows), len(sizes) - 1)]
+            rows.append(buttons[index : index + size])
             index += size
-            i += 1
-        self._rows = rows + [[]]
+        self._rows = [*rows, []]
         return self
 
-    def _append(self, button: dict) -> "BaseKeyboard":
-        if not self._rows:
-            self._rows.append([])
+    def extend(self: KeyboardT, other: BaseKeyboard) -> KeyboardT:
+        """UZ: Boshqa klaviatura qatorlarini qo'shadi. RU: Добавляет ряды другой клавиатуры.
+        EN: Appends the rows of another keyboard.
+        """
+        self._rows = [*self.rows, *other.rows, []]
+        return self
+
+    def _append(self: KeyboardT, button: dict[str, Any]) -> KeyboardT:
         self._rows[-1].append(button)
         return self
 
-    def _clean(self) -> List[list]:
-        return [row for row in self._rows if row]
+    @property
+    def rows(self) -> list[list[dict[str, Any]]]:
+        return [list(row) for row in self._rows if row]
 
-    def extend(self, other: "BaseKeyboard") -> "BaseKeyboard":
-        """Boshqa klaviaturaning qatorlarini qo'shadi."""
-        self.row()
-        self._rows = self._clean() + other._clean() + [[]]
-        return self
-
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         raise NotImplementedError
 
     def __bool__(self) -> bool:
-        return bool(self._clean())
+        return bool(self.rows)
 
     def __repr__(self) -> str:
-        rows = self._clean()
-        return f"<{type(self).__name__} rows={len(rows)} buttons={sum(len(r) for r in rows)}>"
+        rows = self.rows
+        return f"<{type(self).__name__} rows={len(rows)} buttons={sum(map(len, rows))}>"
 
 
 class InlineKeyboard(BaseKeyboard):
-    """UZ: Xabar ostidagi inline tugmalar.
-    RU: Inline-кнопки под сообщением.
+    """UZ: Xabar ostidagi inline tugmalar. RU: Inline-кнопки под сообщением.
     EN: Inline buttons under a message.
     """
 
     def add(
         self,
         text: str,
-        callback_data: Optional[str] = None,
+        callback_data: str | None = None,
         *,
-        url: Optional[str] = None,
-        web_app: Optional[str] = None,
-        login_url: Optional[dict] = None,
-        switch_inline_query: Optional[str] = None,
-        switch_inline_query_current_chat: Optional[str] = None,
-        switch_inline_query_chosen_chat: Optional[dict] = None,
-        copy_text: Optional[str] = None,
+        url: str | None = None,
+        web_app: str | None = None,
+        login_url: dict[str, Any] | None = None,
+        switch_inline_query: str | None = None,
+        switch_inline_query_current_chat: str | None = None,
+        switch_inline_query_chosen_chat: dict[str, Any] | None = None,
+        copy_text: str | None = None,
         pay: bool = False,
-        style: Optional[str] = None,
-        icon: Optional[str] = None,
-        **kwargs,
-    ) -> "InlineKeyboard":
-        """UZ: Universal tugma. `style` — rang, `icon` — premium emoji id.
-        RU: Универсальная кнопка. `style` — цвет, `icon` — premium emoji id.
-        EN: Universal button. `style` is the color and `icon` is the premium emoji id.
+        style: str | None = None,
+        icon: str | None = None,
+        **fields: Any,
+    ) -> InlineKeyboard:
+        """UZ: Universal tugma; hech qanday amal berilmasa matn `callback_data` bo'ladi.
+        RU: Универсальная кнопка; без действия текст становится `callback_data`.
+        EN: Universal button; without an action the text becomes `callback_data`.
         """
-        button: dict = {"text": text}
+        button: dict[str, Any] = {"text": text}
         if callback_data is not None:
-            button["callback_data"] = callback_data
-        if url is not None:
-            button["url"] = url
-        if web_app is not None:
-            button["web_app"] = {"url": web_app}
-        if login_url is not None:
-            button["login_url"] = login_url
-        if switch_inline_query is not None:
-            button["switch_inline_query"] = switch_inline_query
-        if switch_inline_query_current_chat is not None:
-            button["switch_inline_query_current_chat"] = switch_inline_query_current_chat
-        if switch_inline_query_chosen_chat is not None:
-            button["switch_inline_query_chosen_chat"] = switch_inline_query_chosen_chat
-        if copy_text is not None:
-            button["copy_text"] = {"text": copy_text}
-        if pay:
-            button["pay"] = True
-        button.update(_style_fields(style, icon))
-        button.update(kwargs)
-        # hech qanday amal berilmasa — matnning o'zi callback_data bo'ladi
-        if not any(
-            k in button
-            for k in (
-                "callback_data",
-                "url",
-                "web_app",
-                "login_url",
-                "switch_inline_query",
-                "switch_inline_query_current_chat",
-                "switch_inline_query_chosen_chat",
-                "copy_text",
-                "pay",
-                "callback_game",
-            )
-        ):
-            button["callback_data"] = text
+            button["callback_data"] = validate_callback_data(callback_data)
+        optional = {
+            "url": url,
+            "web_app": {"url": web_app} if web_app is not None else None,
+            "login_url": login_url,
+            "switch_inline_query": switch_inline_query,
+            "switch_inline_query_current_chat": switch_inline_query_current_chat,
+            "switch_inline_query_chosen_chat": switch_inline_query_chosen_chat,
+            "copy_text": {"text": copy_text} if copy_text is not None else None,
+            "pay": True if pay else None,
+        }
+        button.update({key: value for key, value in optional.items() if value is not None})
+        button.update(style_fields(style, icon))
+        button.update(fields)
+        if not any(action in button for action in _INLINE_ACTIONS):
+            button["callback_data"] = validate_callback_data(text)
         return self._append(button)
 
-    # --- rangli yorliqlar -----------------------------------------------------
-    def primary(self, text: str, callback_data: str = None, **kw) -> "InlineKeyboard":
-        """Ko'k tugma — asosiy amal."""
-        return self.add(text, callback_data, style=ButtonStyle.PRIMARY, **kw)
+    def primary(self, text: str, callback_data: str | None = None, **kwargs: Any) -> InlineKeyboard:
+        """UZ: Ko'k tugma. RU: Синяя кнопка. EN: Blue button."""
+        return self.add(text, callback_data, style=ButtonStyle.PRIMARY, **kwargs)
 
-    def success(self, text: str, callback_data: str = None, **kw) -> "InlineKeyboard":
-        """Yashil tugma — ijobiy amal."""
-        return self.add(text, callback_data, style=ButtonStyle.SUCCESS, **kw)
+    def success(self, text: str, callback_data: str | None = None, **kwargs: Any) -> InlineKeyboard:
+        """UZ: Yashil tugma. RU: Зелёная кнопка. EN: Green button."""
+        return self.add(text, callback_data, style=ButtonStyle.SUCCESS, **kwargs)
 
-    def danger(self, text: str, callback_data: str = None, **kw) -> "InlineKeyboard":
-        """Qizil tugma — xavfli/o'chiruvchi amal."""
-        return self.add(text, callback_data, style=ButtonStyle.DANGER, **kw)
+    def danger(self, text: str, callback_data: str | None = None, **kwargs: Any) -> InlineKeyboard:
+        """UZ: Qizil tugma. RU: Красная кнопка. EN: Red button."""
+        return self.add(text, callback_data, style=ButtonStyle.DANGER, **kwargs)
 
-    # --- maxsus turlar --------------------------------------------------------
-    def link(self, text: str, url: str, **kw) -> "InlineKeyboard":
-        return self.add(text, url=url, **kw)
+    def link(self, text: str, url: str, **kwargs: Any) -> InlineKeyboard:
+        return self.add(text, url=url, **kwargs)
 
-    def app(self, text: str, url: str, **kw) -> "InlineKeyboard":
-        """Mini App ochadigan tugma."""
-        return self.add(text, web_app=url, **kw)
+    def app(self, text: str, url: str, **kwargs: Any) -> InlineKeyboard:
+        """UZ: Mini App ochadigan tugma. RU: Кнопка, открывающая Mini App.
+        EN: A button that opens a Mini App.
+        """
+        return self.add(text, web_app=url, **kwargs)
 
-    def copy(self, text: str, value: str, **kw) -> "InlineKeyboard":
-        """Bosilganda matnni nusxalaydigan tugma (Bot API 7.11+)."""
-        return self.add(text, copy_text=value, **kw)
+    def copy(self, text: str, value: str, **kwargs: Any) -> InlineKeyboard:
+        """UZ: Matnni nusxalaydigan tugma. RU: Кнопка копирования текста.
+        EN: A button that copies text.
+        """
+        return self.add(text, copy_text=value, **kwargs)
 
-    def pay_button(self, text: str = "Pay", **kw) -> "InlineKeyboard":
-        return self.add(text, pay=True, **kw)
+    def pay_button(self, text: str = "Pay", **kwargs: Any) -> InlineKeyboard:
+        return self.add(text, pay=True, **kwargs)
 
-    def switch(self, text: str, query: str = "", current_chat: bool = False, **kw):
+    def switch(
+        self, text: str, query: str = "", current_chat: bool = False, **kwargs: Any
+    ) -> InlineKeyboard:
         if current_chat:
-            return self.add(text, switch_inline_query_current_chat=query, **kw)
-        return self.add(text, switch_inline_query=query, **kw)
+            return self.add(text, switch_inline_query_current_chat=query, **kwargs)
+        return self.add(text, switch_inline_query=query, **kwargs)
 
-    def to_dict(self) -> dict:
-        return {"inline_keyboard": self._clean()}
+    def to_dict(self) -> dict[str, Any]:
+        return {"inline_keyboard": self.rows}
 
 
 class ReplyKeyboard(BaseKeyboard):
-    """Klaviatura o'rnida chiqadigan tugmalar (rangli va so'rov tugmalari bilan)."""
+    """UZ: Yozish maydoni o'rnidagi tugmalar. RU: Кнопки вместо поля ввода.
+    EN: Buttons shown instead of the input field.
+    """
 
     def __init__(
         self,
         resize: bool = True,
         one_time: bool = False,
-        placeholder: Optional[str] = None,
+        placeholder: str | None = None,
         selective: bool = False,
         persistent: bool = False,
     ) -> None:
@@ -220,66 +248,63 @@ class ReplyKeyboard(BaseKeyboard):
         *,
         request_contact: bool = False,
         request_location: bool = False,
-        request_poll: Optional[str] = None,
-        request_users: Optional[dict] = None,
-        request_chat: Optional[dict] = None,
-        request_managed_bot: Optional[dict] = None,
-        web_app: Optional[str] = None,
-        style: Optional[str] = None,
-        icon: Optional[str] = None,
-        **kwargs,
-    ) -> "ReplyKeyboard":
-        button: dict = {"text": text}
-        if request_contact:
-            button["request_contact"] = True
-        if request_location:
-            button["request_location"] = True
-        if request_poll is not None:
-            button["request_poll"] = {"type": request_poll} if request_poll else {}
-        if request_users is not None:
-            button["request_users"] = request_users
-        if request_chat is not None:
-            button["request_chat"] = request_chat
-        if request_managed_bot is not None:
-            button["request_managed_bot"] = request_managed_bot
-        if web_app is not None:
-            button["web_app"] = {"url": web_app}
-        button.update(_style_fields(style, icon))
-        button.update(kwargs)
+        request_poll: str | None = None,
+        request_users: dict[str, Any] | None = None,
+        request_chat: dict[str, Any] | None = None,
+        request_managed_bot: dict[str, Any] | None = None,
+        web_app: str | None = None,
+        style: str | None = None,
+        icon: str | None = None,
+        **fields: Any,
+    ) -> ReplyKeyboard:
+        button: dict[str, Any] = {"text": text}
+        optional = {
+            "request_contact": True if request_contact else None,
+            "request_location": True if request_location else None,
+            "request_poll": _poll_request(request_poll),
+            "request_users": request_users,
+            "request_chat": request_chat,
+            "request_managed_bot": request_managed_bot,
+            "web_app": {"url": web_app} if web_app is not None else None,
+        }
+        button.update({key: value for key, value in optional.items() if value is not None})
+        button.update(style_fields(style, icon))
+        button.update(fields)
         return self._append(button)
 
-    # --- rangli yorliqlar -----------------------------------------------------
-    def primary(self, text: str, **kw) -> "ReplyKeyboard":
-        return self.add(text, style=ButtonStyle.PRIMARY, **kw)
+    def primary(self, text: str, **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, style=ButtonStyle.PRIMARY, **kwargs)
 
-    def success(self, text: str, **kw) -> "ReplyKeyboard":
-        return self.add(text, style=ButtonStyle.SUCCESS, **kw)
+    def success(self, text: str, **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, style=ButtonStyle.SUCCESS, **kwargs)
 
-    def danger(self, text: str, **kw) -> "ReplyKeyboard":
-        return self.add(text, style=ButtonStyle.DANGER, **kw)
+    def danger(self, text: str, **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, style=ButtonStyle.DANGER, **kwargs)
 
-    # --- so'rov tugmalari -----------------------------------------------------
-    def contact(self, text: str = "📱 Raqamni yuborish", **kw) -> "ReplyKeyboard":
-        return self.add(text, request_contact=True, **kw)
+    def contact(self, text: str = "📱 Raqamni yuborish", **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, request_contact=True, **kwargs)
 
-    def location(self, text: str = "📍 Lokatsiya", **kw) -> "ReplyKeyboard":
-        return self.add(text, request_location=True, **kw)
+    def location(self, text: str = "📍 Lokatsiya", **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, request_location=True, **kwargs)
 
     def request_user(
         self,
         text: str,
         request_id: int = 1,
         *,
-        user_is_bot: Optional[bool] = None,
-        user_is_premium: Optional[bool] = None,
+        user_is_bot: bool | None = None,
+        user_is_premium: bool | None = None,
         max_quantity: int = 1,
         request_name: bool = True,
         request_username: bool = True,
         request_photo: bool = False,
-        **kw,
-    ) -> "ReplyKeyboard":
-        """Foydalanuvchi(lar)ni tanlash tugmasi (KeyboardButtonRequestUsers)."""
-        payload = {
+        **kwargs: Any,
+    ) -> ReplyKeyboard:
+        """UZ: Foydalanuvchi tanlash tugmasi (KeyboardButtonRequestUsers).
+        RU: Кнопка выбора пользователей (KeyboardButtonRequestUsers).
+        EN: A user picker button (KeyboardButtonRequestUsers).
+        """
+        criteria: dict[str, Any] = {
             "request_id": request_id,
             "max_quantity": max_quantity,
             "request_name": request_name,
@@ -287,10 +312,10 @@ class ReplyKeyboard(BaseKeyboard):
             "request_photo": request_photo,
         }
         if user_is_bot is not None:
-            payload["user_is_bot"] = user_is_bot
+            criteria["user_is_bot"] = user_is_bot
         if user_is_premium is not None:
-            payload["user_is_premium"] = user_is_premium
-        return self.add(text, request_users=payload, **kw)
+            criteria["user_is_premium"] = user_is_premium
+        return self.add(text, request_users=criteria, **kwargs)
 
     def request_group(
         self,
@@ -298,14 +323,17 @@ class ReplyKeyboard(BaseKeyboard):
         request_id: int = 1,
         *,
         chat_is_channel: bool = False,
-        bot_is_member: Optional[bool] = None,
+        bot_is_member: bool | None = None,
         request_title: bool = True,
         request_username: bool = True,
         request_photo: bool = False,
-        **kw,
-    ) -> "ReplyKeyboard":
-        """Guruh/kanal tanlash tugmasi (KeyboardButtonRequestChat)."""
-        payload = {
+        **kwargs: Any,
+    ) -> ReplyKeyboard:
+        """UZ: Guruh/kanal tanlash tugmasi (KeyboardButtonRequestChat).
+        RU: Кнопка выбора группы/канала (KeyboardButtonRequestChat).
+        EN: A group/channel picker button (KeyboardButtonRequestChat).
+        """
+        criteria: dict[str, Any] = {
             "request_id": request_id,
             "chat_is_channel": chat_is_channel,
             "request_title": request_title,
@@ -313,26 +341,30 @@ class ReplyKeyboard(BaseKeyboard):
             "request_photo": request_photo,
         }
         if bot_is_member is not None:
-            payload["bot_is_member"] = bot_is_member
-        return self.add(text, request_chat=payload, **kw)
+            criteria["bot_is_member"] = bot_is_member
+        return self.add(text, request_chat=criteria, **kwargs)
 
     def request_bot(
         self,
         text: str = "🤖 Bot tanlash",
         request_id: int = 1,
-        **kw,
-    ) -> "ReplyKeyboard":
-        """Boshqariladigan bot tanlash tugmasi (KeyboardButtonRequestManagedBot, 9.6+)."""
-        payload = {"request_id": request_id}
-        payload.update(kw.pop("criteria", {}) or {})
-        return self.add(text, request_managed_bot=payload, **kw)
+        criteria: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> ReplyKeyboard:
+        """UZ: Boshqariladigan bot tanlash tugmasi (9.6+).
+        RU: Кнопка выбора управляемого бота (9.6+).
+        EN: A managed bot picker button (9.6+).
+        """
+        return self.add(
+            text, request_managed_bot={"request_id": request_id, **(criteria or {})}, **kwargs
+        )
 
-    def app(self, text: str, url: str, **kw) -> "ReplyKeyboard":
-        return self.add(text, web_app=url, **kw)
+    def app(self, text: str, url: str, **kwargs: Any) -> ReplyKeyboard:
+        return self.add(text, web_app=url, **kwargs)
 
-    def to_dict(self) -> dict:
-        markup = {
-            "keyboard": self._clean(),
+    def to_dict(self) -> dict[str, Any]:
+        markup: dict[str, Any] = {
+            "keyboard": self.rows,
             "resize_keyboard": self.resize,
             "one_time_keyboard": self.one_time,
             "selective": self.selective,
@@ -344,34 +376,53 @@ class ReplyKeyboard(BaseKeyboard):
 
 
 class RemoveKeyboard:
-    def __init__(self, selective: bool = False):
+    """UZ: Reply klaviaturani olib tashlaydi. RU: Убирает reply-клавиатуру.
+    EN: Removes the reply keyboard.
+    """
+
+    def __init__(self, selective: bool = False) -> None:
         self.selective = selective
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {"remove_keyboard": True, "selective": self.selective}
 
 
 class ForceReply:
-    def __init__(self, placeholder: Optional[str] = None, selective: bool = False):
+    """UZ: Foydalanuvchini javob yozishga undaydi. RU: Предлагает пользователю ответить.
+    EN: Asks the user to reply.
+    """
+
+    def __init__(self, placeholder: str | None = None, selective: bool = False) -> None:
         self.placeholder = placeholder
         self.selective = selective
 
-    def to_dict(self) -> dict:
-        markup = {"force_reply": True, "selective": self.selective}
+    def to_dict(self) -> dict[str, Any]:
+        markup: dict[str, Any] = {"force_reply": True, "selective": self.selective}
         if self.placeholder:
             markup["input_field_placeholder"] = self.placeholder
         return markup
 
 
-# --- tez yorliqlar ------------------------------------------------------------
 def confirm_keyboard(
     yes: str = "✅ Ha",
     no: str = "❌ Yo'q",
     yes_data: str = "confirm:yes",
     no_data: str = "confirm:no",
 ) -> InlineKeyboard:
-    """Tayyor tasdiqlash klaviaturasi (yashil/qizil)."""
-    kb = InlineKeyboard()
-    kb.success(yes, yes_data)
-    kb.danger(no, no_data)
-    return kb
+    """UZ: Tayyor tasdiqlash klaviaturasi. RU: Готовая клавиатура подтверждения.
+    EN: A ready-made confirmation keyboard.
+    """
+    return InlineKeyboard().success(yes, yes_data).danger(no, no_data)
+
+
+__all__ = [
+    "MAX_CALLBACK_DATA_BYTES",
+    "BaseKeyboard",
+    "ForceReply",
+    "InlineKeyboard",
+    "RemoveKeyboard",
+    "ReplyKeyboard",
+    "confirm_keyboard",
+    "style_fields",
+    "validate_callback_data",
+]
