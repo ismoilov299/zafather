@@ -61,7 +61,7 @@ version = { attr = "zafather.__version__" }
 include = ["zafather*"]
 
 [tool.setuptools.package-data]
-zafather = ["py.typed"]
+zafather = ["py.typed", "mtproto/tl/data/*.tl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

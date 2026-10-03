@@ -29,10 +29,8 @@ __license__ = "MIT"
 
 from .api import AiohttpSession, BaseSession, RetryPolicy, TelegramAPIServer
 from .app import Zafather
-from .auth import AuthHandshake, DHExchange, DHGenOk, ResPQ, RSAPublicKey, ServerDHParamsOk
 from .bot import Bot
 from .callback_data import CallbackData
-from .crypto import AuthKey
 from .dispatcher import Dispatcher
 from .enums import (
     BOT_API_VERSION,
@@ -105,7 +103,6 @@ from .payments import Invoice, LabeledPrice, StarsAPI
 from .polling import LongPolling
 from .rich import RichMessage, RichStream, markdown_rich
 from .router import Router, SkipHandler
-from .session import MTProtoSession
 from .text import (
     SafeHTML,
     TextBuilder,
@@ -123,8 +120,6 @@ from .text import (
     strip_custom_emoji,
     underline,
 )
-from .tl import TLReader, TLRequest, TLWriter
-from .transport import AbridgedTransport, MTProtoTransportError
 from .types import (
     BotSubscriptionUpdated,
     BusinessConnection,
@@ -162,11 +157,8 @@ __bot_api__ = BOT_API_VERSION
 
 __all__ = [
     "BOT_API_VERSION",
-    "AbridgedTransport",
     "AiohttpSession",
     "AlbumMiddleware",
-    "AuthHandshake",
-    "AuthKey",
     "BadRequest",
     "BaseMiddleware",
     "BaseSession",
@@ -189,8 +181,6 @@ __all__ = [
     "ContentType",
     "ContentTypes",
     "Currency",
-    "DHExchange",
-    "DHGenOk",
     "DiceEmoji",
     "Dispatcher",
     "Ephemeral",
@@ -215,8 +205,6 @@ __all__ = [
     "LabeledPrice",
     "LongPolling",
     "MTProtoClient",
-    "MTProtoSession",
-    "MTProtoTransportError",
     "ManagedBotUpdated",
     "ManagedBots",
     "MemoryStorage",
@@ -233,19 +221,16 @@ __all__ = [
     "PollType",
     "PreCheckoutQuery",
     "Premium",
-    "RSAPublicKey",
     "RedisStorage",
     "Regex",
     "RemoveKeyboard",
     "ReplyKeyboard",
-    "ResPQ",
     "RetryAfter",
     "RetryPolicy",
     "RichMessage",
     "RichStream",
     "Router",
     "SafeHTML",
-    "ServerDHParamsOk",
     "ServerError",
     "Service",
     "SkipHandler",
@@ -254,9 +239,6 @@ __all__ = [
     "StateFilter",
     "StatesGroup",
     "StorageKey",
-    "TLReader",
-    "TLRequest",
-    "TLWriter",
     "TelegramAPIError",
     "TelegramAPIServer",
     "TelegramError",
