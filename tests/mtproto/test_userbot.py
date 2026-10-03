@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import importlib.util
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -10,6 +12,8 @@ from zafather import UserBot
 from zafather.mtproto import DcOption, MemorySession, MTProtoClient, events, functions
 from zafather.mtproto.errors import FloodWaitError, SlowModeWaitError, rpc_error
 from zafather.userbot import flood_wait_seconds, is_connection_error, is_flood_wait
+
+EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "userbot.py"
 
 
 class FloodWait(Exception):
@@ -268,3 +272,58 @@ async def test_userbot_end_to_end_with_mtproto(server: FakeTelegramServer) -> No
     assert config.tl_name == "config"
     await userbot.disconnect()
     await asyncio.wait_for(runner, timeout=2)
+
+
+async def test_userbot_example_against_fake_server(
+    server: FakeTelegramServer, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("API_ID", "12345")
+    monkeypatch.setenv("API_HASH", "hash")
+    monkeypatch.setenv("SESSION", str(tmp_path / "example"))
+    spec = importlib.util.spec_from_file_location("example_userbot", EXAMPLE)
+    assert spec is not None and spec.loader is not None
+    example = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(example)
+
+    handlers = example.userbot.list_event_handlers()
+    kinds = sorted(type(builder).__name__ for builder, _ in handlers)
+    assert kinds == ["MessageDeleted", "MessageEdited", *["NewMessage"] * 4]
+    overrides = {dc: DcOption(dc, "127.0.0.1", server.port) for dc in (2, 4)}
+    client = MTProtoClient(
+        12345, "hash", session=MemorySession(), rsa_keys=[server.public], dc_overrides=overrides
+    )
+    for builder, callback in handlers:
+        client.add_event_handler(callback, builder)
+    example.userbot.client = client
+    await example.userbot.start("998901234567", code_callback="12345")
+
+    def sent(name: str) -> list[Any]:
+        return [request for request in server.requests if request.tl_name == name]
+
+    async def until(condition: Any) -> None:
+        for _ in range(300):
+            if condition():
+                return
+            await asyncio.sleep(0.01)
+        raise AssertionError("the example handler did not run")
+
+    await server.push_outgoing(".ping")
+    await until(lambda: sent("messages.editMessage"))
+    assert sent("messages.editMessage")[-1].message.startswith("pong — ")
+    await server.push_outgoing(".id")
+    await until(lambda: len(sent("messages.editMessage")) == 2)
+    edit = sent("messages.editMessage")[-1]
+    assert edit.message.startswith("chat_id: 2000\nmessage_id: ")
+    assert {entity.tl_name for entity in edit.entities} == {"messageEntityCode"}
+    await server.push_outgoing(".history 3")
+    await until(lambda: sent("messages.sendMessage"))
+    assert sent("messages.getHistory")[-1].limit == 3
+    greeting = await server.push_incoming("Salom!")
+    await until(lambda: len(sent("messages.sendMessage")) == 2)
+    reply = sent("messages.sendMessage")[-1]
+    assert reply.message.startswith("Va alaykum assalom!")
+    assert reply.reply_to.reply_to_msg_id == greeting.id
+    await server.push_incoming("boshqa gap")
+    await asyncio.sleep(0.05)
+    assert len(sent("messages.sendMessage")) == 2
+    await example.userbot.disconnect()

@@ -2,15 +2,16 @@
 RU: Zafather — полный пример: FSM, клавиатуры, router, middleware, ошибки.
 EN: Zafather — full example: FSM, keyboards, router, middleware, errors.
 """
+
 import logging
 import os
 
 from zafather import (
+    CallbackQuery,
     F,
     FSMContext,
     InlineKeyboard,
     Message,
-    CallbackQuery,
     RemoveKeyboard,
     ReplyKeyboard,
     Router,
@@ -24,14 +25,14 @@ bot = Zafather(os.getenv("BOT_TOKEN", "TOKENNI_SHU_YERGA"), parse_mode="HTML")
 ADMINS = {123456789}
 
 
-# ---------------------------------------------------------------- FSM holatlar
+# --- UZ: FSM holatlari / RU: Состояния FSM / EN: FSM states ------------------------------
 class Anketa(StatesGroup):
     ism = State()
     yosh = State()
     shahar = State()
 
 
-# ---------------------------------------------------------------- middleware
+# --- UZ/RU/EN: middleware ------------------------------------------------------------------
 @bot.middleware
 async def logger(event, data, next_):
     user = getattr(event, "from_user", None)
@@ -39,7 +40,7 @@ async def logger(event, data, next_):
     return await next_(event, data)
 
 
-# ---------------------------------------------------------------- asosiy menyu
+# --- UZ: Asosiy menyu / RU: Главное меню / EN: Main menu -----------------------------------
 def main_menu() -> InlineKeyboard:
     kb = InlineKeyboard()
     kb.add("📝 Anketa", callback_data="menu:anketa")
@@ -64,7 +65,7 @@ async def info(c: CallbackQuery):
     await c.edit("Bu bot <b>Zafather</b> frameworkida yozilgan.", reply_markup=main_menu())
 
 
-# ---------------------------------------------------------------- anketa (FSM)
+# --- UZ: Anketa / RU: Анкета / EN: Questionnaire (FSM) ------------------------------------
 @bot.callback(F.data == "menu:anketa")
 async def anketa_start(c: CallbackQuery, state: FSMContext):
     await c.answer()
@@ -98,13 +99,12 @@ async def anketa_tugadi(m: Message, state: FSMContext):
     data = await state.update_data(shahar=m.text)
     await state.clear()
     await m.answer(
-        "✅ Anketa qabul qilindi:\n"
-        f"👤 {data['ism']}\n🎂 {data['yosh']}\n🏙 {data['shahar']}",
+        f"✅ Anketa qabul qilindi:\n👤 {data['ism']}\n🎂 {data['yosh']}\n🏙 {data['shahar']}",
         reply_markup=RemoveKeyboard(),
     )
 
 
-# ---------------------------------------------------------------- admin router
+# --- UZ/RU/EN: admin router ----------------------------------------------------------------
 admin = Router("admin")
 
 
@@ -119,7 +119,7 @@ async def stats(m: Message):
 bot.include(admin)
 
 
-# ---------------------------------------------------------------- media va xato
+# --- UZ: Media va xatolar / RU: Медиа и ошибки / EN: Media and errors --------------------
 @bot.content("photo")
 async def photo(m: Message):
     await m.reply(f"Rasm qabul qilindi ({len(m.photo)} o'lchamda).")

@@ -272,13 +272,27 @@ class FakeTelegramServer:
         self, text: str, *, user_id: int = 2000, short: bool = True
     ) -> TLObject:
         """Simulates a private message from another user."""
+        return await self.push_message(text, user_id=user_id, short=short)
+
+    async def push_outgoing(
+        self, text: str, *, user_id: int = 2000, short: bool = True
+    ) -> TLObject:
+        """Simulates a message the account sent to `user_id` from another device."""
+        return await self.push_message(text, user_id=user_id, short=short, out=True)
+
+    async def push_message(
+        self, text: str, *, user_id: int = 2000, short: bool = True, out: bool = False
+    ) -> TLObject:
+        """Pushes a private-chat message update, keeping pts and history consistent."""
         self.pts += 1
         message = build(
             "message",
             id=self.next_message_id,
             peer_id=build("peerUser", user_id=user_id),
+            from_id=build("peerUser", user_id=self.account.user_id) if out else None,
             date=int(time.time()),
             message=text,
+            out=out,
         )
         self.next_message_id += 1
         sender = build("user", id=user_id, access_hash=555, first_name="Vali", username="vali")
@@ -286,6 +300,7 @@ class FakeTelegramServer:
         if short:
             update = build(
                 "updateShortMessage",
+                out=out,
                 id=message.id,
                 user_id=user_id,
                 message=text,

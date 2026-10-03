@@ -2,6 +2,7 @@
 RU: Самый простой бот на Zafather.
 EN: The simplest Zafather bot.
 """
+
 import os
 
 from zafather import F, Message, Zafather

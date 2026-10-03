@@ -13,6 +13,7 @@ UZ:  /ask ... — javobni bo'lak-bo'lak (oqim bilan) yuborish, AI botlar uchun
 RU:  /ask ... — потоковая отправка ответа частями, для AI-ботов
 EN:  /ask ... — stream the answer in chunks, for AI bots
 """
+
 import asyncio
 import os
 
@@ -34,7 +35,10 @@ FIRE = "5368324170671202286"
 
 @bot.command("report")
 async def report(m: Message):
-    """Tuzilgan hisobot — oddiy xabarda bunday formatlash imkonsiz."""
+    """UZ: Tuzilgan hisobot — oddiy xabarda bunday formatlash imkonsiz.
+    RU: Структурированный отчёт — в обычном сообщении такое невозможно.
+    EN: A structured report — impossible to format like this in a plain message.
+    """
     rm = RichMessage()
     rm.heading("Avgust hisoboti")
     rm.paragraph(emoji(FIRE, "🔥"), " Oy ", bold("rejadan oshiq"), " yakunlandi.")
@@ -66,7 +70,10 @@ async def report(m: Message):
 
 
 async def fake_llm(question: str):
-    """Haqiqiy loyihada bu yerda LLM'ning oqim javobi bo'ladi."""
+    """UZ: Haqiqiy loyihada bu yerda LLM'ning oqim javobi bo'ladi.
+    RU: В реальном проекте здесь будет потоковый ответ LLM.
+    EN: In a real project this is the LLM's streamed answer.
+    """
     words = f"Savolingiz: {question}. Javob tayyorlanmoqda va bo'lak-bo'lak yuborilmoqda.".split()
     for word in words:
         await asyncio.sleep(0.15)
@@ -75,7 +82,10 @@ async def fake_llm(question: str):
 
 @bot.command("ask")
 async def ask(m: Message, args):
-    """Javobni oqim bilan yuborish: foydalanuvchi matn yozilishini kuzatib turadi."""
+    """UZ: Javobni oqim bilan yuborish: foydalanuvchi matn yozilishini kuzatib turadi.
+    RU: Потоковая отправка: пользователь видит, как пишется ответ.
+    EN: Streams the answer so the user watches it being written.
+    """
     if not args:
         await m.answer("Savolingizni yozing: <code>/ask Zafather nima?</code>")
         return
@@ -83,12 +93,17 @@ async def ask(m: Message, args):
     async with RichStream(bot.bot, m.chat_id, min_interval=0.7) as stream:
         async for chunk in fake_llm(args):
             await stream.push(chunk)
-    # `async with` tugagach yakuniy sendRichMessage avtomatik yuboriladi
+    # UZ: `async with` tugagach yakuniy sendRichMessage avtomatik yuboriladi.
+    # RU: После `async with` итоговый sendRichMessage отправляется автоматически.
+    # EN: When `async with` ends, the final sendRichMessage is sent automatically.
 
 
 @bot.command("thinking")
 async def thinking(m: Message):
-    """AI mulohazasini alohida blokda ko'rsatish."""
+    """UZ: AI mulohazasini alohida blokda ko'rsatadi.
+    RU: Показывает рассуждения AI в отдельном блоке.
+    EN: Shows the AI's reasoning in a separate block.
+    """
     rm = RichMessage()
     rm.thinking("Ma'lumotlarni tekshiryapman, uch manbani solishtiryapman…")
     rm.paragraph("Tayyor: uchala manba ham bir xil raqamni ko'rsatdi.")

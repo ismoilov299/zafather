@@ -1,6 +1,6 @@
-"""UZ: Zafather — Bot API 10.2 namunasi.
-RU: Zafather — пример для Bot API 10.2.
-EN: Zafather — Bot API 10.2 example.
+"""UZ: Zafather — Bot API 10.2+ namunasi.
+RU: Zafather — пример для Bot API 10.2+.
+EN: Zafather — Bot API 10.2+ example.
 
 UZ: Ko'rsatiladi:
 RU: Показаны:
@@ -21,19 +21,18 @@ EN: Demonstrates:
   • реакции, guest mode, подписки
   • reactions, guest mode, subscriptions
 """
+
 import logging
 import os
 
 from zafather import (
     BotFarm,
-    ButtonStyle,
     CallbackQuery,
     InlineKeyboard,
     ManagedBots,
     Message,
     ReplyKeyboard,
     Router,
-    Service,
     TextBuilder,
     Zafather,
     bold,
@@ -43,21 +42,25 @@ from zafather import (
 
 bot = Zafather(os.getenv("BOT_TOKEN", "TOKENNI_SHU_YERGA"), parse_mode="HTML")
 
-# Bot egangizning premium emoji id'lari (@idstickerbot orqali olinadi)
+# UZ: Premium emoji ID'lari (@idstickerbot orqali olinadi).
+# RU: ID premium emoji (можно узнать через @idstickerbot).
+# EN: Premium emoji IDs (look them up with @idstickerbot).
 FIRE = "5368324170671202286"
 STAR = "5370870893004203704"
 
 MANAGER_USERNAME = os.getenv("MANAGER_USERNAME", "ZafatherManagerBot")
 
 
-# ---------------------------------------------------------------- 1. Rangli tugmalar
+# --- 1. UZ: Rangli tugmalar / RU: Цветные кнопки / EN: Colored buttons ----------------
 @bot.command("start")
 async def start(m: Message):
     kb = InlineKeyboard()
     kb.success("✅ Tasdiqlash", "act:ok")
     kb.danger("🗑 O'chirish", "act:del")
     kb.row()
-    kb.primary("⭐️ Asosiy amal", "act:main", icon=STAR)   # ko'k + premium emoji ikonka
+    # UZ: ko'k + premium emoji ikonka. RU: синяя + иконка premium emoji.
+    # EN: blue + a premium emoji icon.
+    kb.primary("⭐️ Asosiy amal", "act:main", icon=STAR)
     kb.row()
     kb.copy("📋 Promokodni nusxalash", "ZAFATHER2026")
     kb.link("📖 Hujjat", "https://core.telegram.org/bots/api")
@@ -77,20 +80,26 @@ async def actions(c: CallbackQuery):
         await c.answer(f"Tanlandi: {action}")
 
 
-# ---------------------------------------------------------------- 2. Premium emoji + entity
+# --- 2. UZ/RU/EN: Premium emoji + entities ----------------------------------------------
 @bot.command("emoji")
 async def premium_emoji(m: Message):
-    """Entity orqali — parse_mode kerak emas, `date_time` ham shu yo'l bilan."""
+    """UZ: Entity orqali — parse_mode kerak emas (`date_time` ham shu yo'l bilan).
+    RU: Через entities — parse_mode не нужен (так же работает `date_time`).
+    EN: Via entities — no parse_mode needed (`date_time` works the same way).
+    """
     tb = TextBuilder()
     tb.emoji(FIRE, "🔥").text(" ").bold("Premium emoji").line()
     tb.text("Oddiy matn, ").spoiler("yashirin qism").text(" va ").code("kod")
     await m.answer(tb.text_value, entities=tb.entities, parse_mode=None)
 
 
-# ---------------------------------------------------------------- 3. Ephemeral (10.2)
+# --- 3. UZ/RU/EN: Ephemeral (10.2/10.3) ---------------------------------------------------
 @bot.command("secret")
 async def secret(m: Message):
-    """Guruhda faqat buyruq bergan odamga ko'rinadigan javob."""
+    """UZ: Guruhda faqat buyruq bergan odamga ko'rinadigan javob.
+    RU: Ответ, который в группе видит только автор команды.
+    EN: A reply that only the command's author sees in a group.
+    """
     await m.answer_ephemeral("Bu xabarni faqat siz ko'rasiz 🤫")
 
 
@@ -99,8 +108,10 @@ async def like(m: Message):
     await m.react("🔥")
 
 
-# ---------------------------------------------------------------- 4. Bot yaratadigan bot
-child = Router("child")          # yaratilgan botlar uchun handlerlar
+# --- 4. UZ: Bot yaratadigan bot / RU: Бот, создающий ботов / EN: Bots creating bots -----
+# UZ: Yaratilgan botlar uchun handlerlar. RU: Обработчики для созданных ботов.
+# EN: Handlers for the created bots.
+child = Router("child")
 
 
 @child.command("start")
@@ -113,7 +124,10 @@ farm = BotFarm(child)
 
 @bot.command("newbot")
 async def new_bot(m: Message):
-    """Foydalanuvchiga o'z botini yaratish taklifi."""
+    """UZ: Foydalanuvchiga o'z botini yaratishni taklif qiladi.
+    RU: Предлагает пользователю создать собственного бота.
+    EN: Offers the user to create their own bot.
+    """
     suggested = f"{m.from_user.username or m.user_id}_zaf_bot"
     url = ManagedBots.create_link(MANAGER_USERNAME, suggested, name="Mening botim")
 
@@ -126,10 +140,15 @@ async def new_bot(m: Message):
 
 @bot.managed_bot()
 async def on_managed_bot(event, bot):
-    """Bot yaratilganda yoki tokeni almashganda ishlaydi."""
+    """UZ: Bot yaratilganda yoki tokeni almashganda ishlaydi.
+    RU: Срабатывает при создании бота или смене его токена.
+    EN: Runs when a bot is created or its token changes.
+    """
     token = await ManagedBots(bot).token(event.bot_id)
     if token:
-        await farm.add(token)          # yangi bot shu zahoti ishga tushadi
+        # UZ: Yangi bot shu zahoti ishga tushadi. RU: Новый бот запускается сразу.
+        # EN: The new bot starts right away.
+        await farm.add(token)
         logging.info("Yangi bot fermaga qo'shildi. Jami: %s", farm.count)
 
 
@@ -138,7 +157,7 @@ async def managed_created(m: Message, service_data):
     await m.answer("✅ Bot yaratildi va ishga tushdi!")
 
 
-# ---------------------------------------------------------------- 5. Boshqa yangiliklar
+# --- 5. UZ: Boshqa yangiliklar / RU: Другие новинки / EN: Other additions ----------------
 @bot.reaction()
 async def on_reaction(event):
     logging.info("Reaksiya o'zgardi: chat=%s", event.chat.id if event.chat else "?")
@@ -146,13 +165,18 @@ async def on_reaction(event):
 
 @bot.guest()
 async def on_guest(event):
-    """Guest mode (10.0) — bot a'zo bo'lmagan chatdagi murojaat."""
+    """UZ: Guest mode (10.0) — bot a'zo bo'lmagan chatdagi murojaat.
+    RU: Guest mode (10.0) — обращение в чате, где бот не состоит.
+    EN: Guest mode (10.0) — a request from a chat the bot is not a member of.
+    """
     await event.answer("Salom! Men mehmon rejimida javob beryapman.")
 
 
 @bot.subscription()
 async def on_subscription(event):
-    """Obuna holati o'zgardi (10.2)."""
+    """UZ: Obuna holati o'zgardi (10.2). RU: Изменился статус подписки (10.2).
+    EN: A subscription status changed (10.2).
+    """
     logging.info("Obuna yangilandi: %s", event.raw)
 
 
