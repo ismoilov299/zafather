@@ -103,24 +103,35 @@ class _MessageEvent(Event):
 
     @property
     def id(self) -> int:
+        """UZ: Xabar ID si. RU: ID сообщения. EN: The message ID."""
         return int(self.message.id)
 
     @property
     def text(self) -> str:
+        """UZ: Xabar matni (formatlashsiz). RU: Текст сообщения (без форматирования).
+        EN: The message text (without formatting).
+        """
         return str(self.message.values.get("message") or "")
 
     raw_text = text
 
     @property
     def out(self) -> bool:
+        """UZ: Xabarni o'zingiz yuborganmisiz. RU: Отправлено ли сообщение вами.
+        EN: Whether you sent the message.
+        """
         return bool(self.message.values.get("out"))
 
     @property
     def chat_id(self) -> int:
+        """UZ: Belgilangan chat ID. RU: Помеченный ID чата. EN: The marked chat ID."""
         return peer_id(self.message.peer_id)
 
     @property
     def sender_id(self) -> int | None:
+        """UZ: Yuboruvchi ID si (kanal postlarida None bo'lishi mumkin). RU: ID отправителя
+        (в постах каналов может быть None). EN: The sender ID (may be None for channel posts).
+        """
         sender = self.message.values.get("from_id")
         if sender is not None:
             return peer_id(sender)
@@ -130,14 +141,17 @@ class _MessageEvent(Event):
 
     @property
     def is_private(self) -> bool:
+        """UZ: Shaxsiy chat. RU: Личный чат. EN: A private chat."""
         return self.message.peer_id.tl_name == "peerUser"
 
     @property
     def is_group(self) -> bool:
+        """UZ: Oddiy guruh. RU: Обычная группа. EN: A basic group."""
         return self.message.peer_id.tl_name == "peerChat"
 
     @property
     def is_channel(self) -> bool:
+        """UZ: Kanal yoki superguruh. RU: Канал или супергруппа. EN: A channel or supergroup."""
         return self.message.peer_id.tl_name == "peerChannel"
 
     async def respond(self, text: str, **kwargs: Any) -> TLObject:
@@ -155,12 +169,17 @@ class _MessageEvent(Event):
         return await self.client.edit_message(self.chat_id, self.id, text, **kwargs)
 
     async def delete(self, revoke: bool = True) -> Any:
+        """UZ: Xabarni o'chiradi (`revoke` — hamma uchun). RU: Удаляет сообщение (`revoke` —
+        для всех). EN: Deletes the message (`revoke` deletes it for everyone).
+        """
         return await self.client.delete_messages(self.chat_id, [self.id], revoke=revoke)
 
     async def get_chat(self) -> TLObject:
+        """UZ: Chat obyekti. RU: Объект чата. EN: The chat object."""
         return await self.client.get_entity(self.chat_id)
 
     async def get_sender(self) -> TLObject | None:
+        """UZ: Yuboruvchi obyekti. RU: Объект отправителя. EN: The sender object."""
         sender = self.sender_id
         return None if sender is None else await self.client.get_entity(sender)
 
