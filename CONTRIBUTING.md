@@ -26,21 +26,24 @@ feature yozilsa, qolgan ikki tilda ham o'sha mazmun aks etadi.
 
 1. Repozitoriyni fork qiling, `main` dan alohida branch oching
    (`feat/callback-data`, `fix/regex-caption` kabi).
-2. **Har bir yangi imkoniyat uchun test majburiy** — `test_zafather.py`,
-   `test_miniapp.py`, `test_rich.py` uslubida (Telegram'ga ulanmasdan,
-   `app.bot.request` / `app.bot.call` soxta funksiya bilan almashtiriladi).
+2. **Har bir yangi imkoniyat uchun test majburiy** — `tests/` ichida, pytest
+   uslubida va Telegram'ga ulanmasdan: Bot API uchun `tests/support.py` dagi
+   `FakeSession`, MTProto uchun `tests/mtproto/fake_server.py` dagi soxta server
+   (`server` fixture).
 3. Docs'ni uch tilda yangilang: o'zbekcha, ruscha, inglizcha.
 4. Tekshiring:
    ```bash
-   python -m compileall -q zafather
-   python test_zafather.py
-   python test_miniapp.py
-   python test_rich.py
+   pip install -e ".[dev]"
+   pytest -q
+   ruff check zafather tests examples
+   ruff format --check zafather tests examples
+   mypy
    ```
    Testlar soni kamaymasin.
 5. Yangi modul qo'shsangiz: `zafather/__init__.py` ga eksport + `__all__` ga
    nom + `README.md` da bo'lim + `CHANGELOG.md` ga qator + versiya ko'tarish
-   (`pyproject.toml` va `zafather/__init__.py` bir vaqtda).
+   (versiya faqat `zafather/__init__.py` dagi `__version__` da; `pyproject.toml`
+   uni avtomatik o'qiydi).
 6. Commit xabari: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` + o'zbekcha
    tavsif. Har bir imkoniyat alohida commit.
 7. `main` ga pull request oching.
@@ -51,7 +54,11 @@ feature yozilsa, qolgan ikki tilda ham o'sha mazmun aks etadi.
   `UZ:`, `RU:`, `EN:` tartibida. Kod nomlari — inglizcha.
 - Juda qisqa ichki comment kerak bo'lsa ham shu tartibga amal qiling; comment
   zarur bo'lmasa, kodni o'zi tushunarli qilib yozing.
-- Public API uchun type hint majburiy.
+- Public API uchun type hint majburiy (`mypy` xatosiz o'tadi).
+- SOLID: yangi imkoniyat mavjud interfeyslar orqali qo'shiladi (`BaseSession`,
+  `BaseStorage`, `Filter`, `BaseMiddleware`, `SessionStorage`, `Transport`);
+  yadroni o'zgartirishdan oldin kengaytirish nuqtasini qidiring
+  ([docs/uz/architecture.md](docs/uz/architecture.md)).
 - Kutubxona kodida `print()` yo'q — `logging.getLogger("zafather.<modul>")`.
 - Satr uzunligi ~100 belgi.
 - Yangi majburiy bog'liqlik qo'shilmaydi (`aiohttp` dan boshqa;

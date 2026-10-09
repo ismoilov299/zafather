@@ -2,6 +2,7 @@
 RU: Zafather — константы Bot API 10.3.
 EN: Zafather — Bot API 10.3 constants.
 """
+
 from __future__ import annotations
 
 
@@ -11,9 +12,12 @@ class ButtonStyle:
     EN: Button color (Bot API 9.4+). For InlineKeyboardButton and KeyboardButton.
     """
 
-    PRIMARY = "primary"   # UZ: ko'k — asosiy amal / RU: синий — основное действие / EN: blue — primary action
-    SUCCESS = "success"   # UZ: yashil — ijobiy amal / RU: зелёный — положительное действие / EN: green — positive action
-    DANGER = "danger"     # UZ: qizil — xavfli/o'chiruvchi amal / RU: красный — опасное/удаляющее действие / EN: red — destructive action
+    #: UZ: ko'k — asosiy amal. RU: синий — основное действие. EN: blue — primary action.
+    PRIMARY = "primary"
+    #: UZ: yashil — ijobiy amal. RU: зелёный — положительное действие. EN: green — positive action.
+    SUCCESS = "success"
+    #: UZ: qizil — xavfli amal. RU: красный — опасное действие. EN: red — destructive action.
+    DANGER = "danger"
 
     ALL = (PRIMARY, SUCCESS, DANGER)
 
@@ -58,9 +62,13 @@ class UpdateType:
     CHAT_JOIN_REQUEST = "chat_join_request"
     CHAT_BOOST = "chat_boost"
     REMOVED_CHAT_BOOST = "removed_chat_boost"
-    GUEST_MESSAGE = "guest_message"          # UZ: 10.0 — mehmon rejimi / RU: 10.0 — гостевой режим / EN: 10.0 — guest mode
-    MANAGED_BOT = "managed_bot"              # UZ: 9.6 — bot yaratadigan botlar / RU: 9.6 — боты, создающие ботов / EN: 9.6 — bots that create bots
-    SUBSCRIPTION = "subscription"            # UZ: 10.2 — obuna o'zgarishi / RU: 10.2 — изменение подписки / EN: 10.2 — subscription change
+    #: UZ: 10.0 — mehmon rejimi. RU: 10.0 — гостевой режим. EN: 10.0 — guest mode.
+    GUEST_MESSAGE = "guest_message"
+    #: UZ: 9.6 — bot yaratadigan botlar. RU: 9.6 — боты, создающие ботов.
+    #: EN: 9.6 — bots that create bots.
+    MANAGED_BOT = "managed_bot"
+    #: UZ: 10.2 — obuna o'zgarishi. RU: 10.2 — изменение подписки. EN: 10.2 — subscription change.
+    SUBSCRIPTION = "subscription"
     # UZ: foydalanuvchi rich/message generatsiyasini to'xtatdi.
     # RU: пользователь остановил генерацию rich/message.
     # EN: the user stopped rich/message generation.
@@ -124,23 +132,23 @@ class ContentType:
     SUCCESSFUL_PAYMENT = "successful_payment"
     REFUNDED_PAYMENT = "refunded_payment"
     PAID_MEDIA = "paid_media"
-    LIVE_PHOTO = "live_photo"            # 10.0
-    CHECKLIST = "checklist"              # 9.1
-    RICH_MESSAGE = "rich_message"        # 10.1
-    GIFT = "gift"                        # 9.0
-    UNIQUE_GIFT = "unique_gift"          # 9.0
+    LIVE_PHOTO = "live_photo"  # 10.0
+    CHECKLIST = "checklist"  # 9.1
+    RICH_MESSAGE = "rich_message"  # 10.1
+    GIFT = "gift"  # 9.0
+    UNIQUE_GIFT = "unique_gift"  # 9.0
     NEW_CHAT_MEMBERS = "new_chat_members"
     LEFT_CHAT_MEMBER = "left_chat_member"
     PINNED_MESSAGE = "pinned_message"
-    MANAGED_BOT_CREATED = "managed_bot_created"          # 9.6
-    POLL_OPTION_ADDED = "poll_option_added"              # 9.6
-    POLL_OPTION_DELETED = "poll_option_deleted"          # 9.6
-    SUGGESTED_POST_INFO = "suggested_post_info"          # 9.2
-    COMMUNITY_CHAT_ADDED = "community_chat_added"        # 10.2
-    COMMUNITY_CHAT_REMOVED = "community_chat_removed"    # 10.2
-    COMMUNITY_CHAT_JOINED = "community_chat_joined"      # 10.3
-    CHAT_OWNER_CHANGED = "chat_owner_changed"            # 9.4
-    CHAT_OWNER_LEFT = "chat_owner_left"                  # 9.4
+    MANAGED_BOT_CREATED = "managed_bot_created"  # 9.6
+    POLL_OPTION_ADDED = "poll_option_added"  # 9.6
+    POLL_OPTION_DELETED = "poll_option_deleted"  # 9.6
+    SUGGESTED_POST_INFO = "suggested_post_info"  # 9.2
+    COMMUNITY_CHAT_ADDED = "community_chat_added"  # 10.2
+    COMMUNITY_CHAT_REMOVED = "community_chat_removed"  # 10.2
+    COMMUNITY_CHAT_JOINED = "community_chat_joined"  # 10.3
+    CHAT_OWNER_CHANGED = "chat_owner_changed"  # 9.4
+    CHAT_OWNER_LEFT = "chat_owner_left"  # 9.4
 
     MEDIA = (PHOTO, VIDEO, ANIMATION, AUDIO, VOICE, DOCUMENT, VIDEO_NOTE, LIVE_PHOTO)
 

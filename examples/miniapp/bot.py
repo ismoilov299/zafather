@@ -24,6 +24,7 @@ RU: Затем в @BotFather → /mybots → Bot Settings → Menu Button зад
 EN: Then in @BotFather → /mybots → Bot Settings → Menu Button set APP_URL,
 or the menu button will be configured automatically when the bot starts.
 """
+
 import os
 import time
 
@@ -42,11 +43,13 @@ PORT = int(os.getenv("PORT", "8080"))
 
 bot = Zafather(TOKEN, parse_mode="HTML")
 
-# Oddiy "baza" — haqiqiy loyihada bu SQLite/Postgres bo'ladi
+# UZ: Oddiy "baza" — haqiqiy loyihada SQLite/Postgres bo'ladi.
+# RU: Простая "база" — в реальном проекте это SQLite/Postgres.
+# EN: A toy "database" — use SQLite/Postgres in a real project.
 CLICKS: dict = {}
 
 
-# ============================================================ BOT TOMONI
+# === UZ: Bot tomoni / RU: Сторона бота / EN: Bot side ======================================
 @bot.command("start")
 async def start(m: Message):
     kb = InlineKeyboard()
@@ -63,32 +66,42 @@ async def start(m: Message):
 
 @bot.message(WebAppData())
 async def on_web_app_data(m: Message, web_app_data):
-    """Reply-keyboard Mini App'dan `sendData()` orqali kelgan ma'lumot.
-
-    Diqqat: bu kanal imzolanmagan — muhim amallar uchun backend API'dan
-    (initData tekshiruvi bilan) foydalaning.
+    """UZ: Reply-keyboard Mini App'dan `sendData()` orqali kelgan ma'lumot. Bu kanal
+    imzolanmagan — muhim amallar uchun backend API'dan foydalaning.
+    RU: Данные из Mini App reply-клавиатуры через `sendData()`. Канал не подписан —
+    для важных действий используйте backend API.
+    EN: Data sent by a reply-keyboard Mini App via `sendData()`. This channel is not
+    signed — use the backend API for anything important.
     """
     await m.answer(f"Ilovadan keldi: <code>{web_app_data}</code>")
 
 
 @bot.on_startup
 async def setup_menu():
-    """Chatdagi menyu tugmasini Mini App'ga aylantiradi."""
+    """UZ: Menyu tugmasini Mini App'ga aylantiradi. RU: Делает кнопку меню кнопкой
+    Mini App. EN: Turns the chat menu button into a Mini App button.
+    """
     await bot.mini_app.set_menu_button("🚀 Ochish", APP_URL)
 
 
-# ============================================================ BACKEND API
-# static_dir — index.html shu papkadan beriladi
+# === UZ/RU/EN: Backend API =================================================================
+# UZ: index.html shu papkadan beriladi. RU: index.html отдаётся из этой папки.
+# EN: index.html is served from this folder.
 server = bot.serve_mini_app(
     static_dir=os.path.join(os.path.dirname(__file__), "webapp"),
     port=PORT,
-    max_age=3600,          # initData 1 soatdan eski bo'lsa rad etiladi
+    # UZ: 1 soatdan eski initData rad etiladi. RU: initData старше часа отклоняется.
+    # EN: initData older than an hour is rejected.
+    max_age=3600,
 )
 
 
 @server.api("/me")
 async def me(user, init):
-    """Kim kirganini qaytaradi. `user` — TEKSHIRILGAN ma'lumot."""
+    """UZ: Kim kirganini qaytaradi; `user` — tekshirilgan ma'lumot.
+    RU: Возвращает, кто вошёл; `user` — проверенные данные.
+    EN: Returns who signed in; `user` is verified data.
+    """
     return {
         "id": user.id,
         "name": user.full_name,
@@ -102,19 +115,24 @@ async def me(user, init):
 
 @server.api("/click")
 async def click(user):
-    """Har bosishda hisoblagichni oshiradi — server holatiga misol."""
+    """UZ: Har bosishda hisoblagichni oshiradi. RU: Увеличивает счётчик при каждом нажатии.
+    EN: Increments a counter on every press.
+    """
     CLICKS[user.id] = CLICKS.get(user.id, 0) + 1
     return {"clicks": CLICKS[user.id]}
 
 
 @server.api("/notify")
 async def notify(user, data, bot):
-    """Ilovadan botga xabar yubortirish — ikkalasini bog'lashning eng oddiy yo'li."""
+    """UZ: Ilovadan bot orqali xabar yuboradi. RU: Отправляет сообщение через бота из
+    приложения. EN: Sends a message through the bot from the app.
+    """
     text = str(data.get("text", "")).strip()[:400] or "Salom, ilovadan!"
     await bot.send_message(chat_id=user.id, text=f"📨 Ilovadan: {text}")
     return {"sent": True}
 
 
 if __name__ == "__main__":
-    # Server + bot polling birga ishlaydi
+    # UZ: Server va bot polling birga ishlaydi. RU: Сервер и polling работают вместе.
+    # EN: The server and bot polling run together.
     server.run()

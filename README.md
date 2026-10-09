@@ -12,21 +12,24 @@
 Faqat bitta kutubxonaga (`aiohttp`) tayanadi, ichini o'qib tushunish oson.
 
 **Bot API 10.3** darajasida: rangli tugmalar, premium emoji, bot yaratadigan botlar,
-ephemeral xabarlar, guest mode, reaksiyalar, obunalar.
+ephemeral xabarlar, guest mode, reaksiyalar, obunalar. Userbotlar uchun o'z
+**MTProto 2.0** mijozi bor (TL layer 229, Telethon'siz).
 
 ### Русский
 **Zafather** — лёгкий async-фреймворк для создания Telegram-ботов с минимальными зависимостями.
 Поддерживает только одну библиотеку (`aiohttp`), код читабелен и прост в изучении.
 
 **Bot API 10.3**: цветные кнопки, premium emoji, боты, создающие ботов,
- ephemeral-сообщения, guest mode, реакции, подписки.
+ephemeral-сообщения, guest mode, реакции, подписки. Для userbot есть собственный
+клиент **MTProto 2.0** (TL layer 229, без Telethon).
 
 ### English
 **Zafather** — a lightweight async framework for building Telegram bots with minimal dependencies.
 It relies on only one library (`aiohttp`) and is designed to be easy to read and understand.
 
 **Bot API 10.3** support includes colored buttons, premium emoji, bots that create bots,
- ephemeral messages, guest mode, reactions, and subscriptions.
+ephemeral messages, guest mode, reactions, and subscriptions. Userbots get a built-in
+**MTProto 2.0** client (TL layer 229, no Telethon).
 
 Muallif va yetakchi dasturchi — [**ismoilov299**](https://github.com/ismoilov299).
 
@@ -64,13 +67,14 @@ pip install "zafather[userbot]"
 Repozitoriydan (ishlab chiqish uchun):
 
 ```bash
-pip install -e ".[miniapp]"
+pip install -e ".[dev]"
 ```
 
 Yangi loyiha yaratish:
 
 ```bash
-python -m zafather new mening_botim
+python -m zafather new mening_botim            # bot
+python -m zafather new mening_userbotim --userbot
 cd mening_botim
 python bot.py
 ```
@@ -86,8 +90,9 @@ python bot.py
 | `F` sehrli filtr | `F.text == "salom"`, `F.data.startswith("menu:")`, `~F.photo` |
 | FSM | `StatesGroup`, `State`, `FSMContext`, Memory/JSON storage |
 | **i18n** | `I18n` middleware, `language_code` asosida tarjimalar va fallback |
-| **Userbot** | Mustaqil MTProto client orqali akkauntlar bilan ishlash |
-| **TL protocol** | Telethon'siz TL binary serializer, request builder va reader |
+| **Userbot** | O'z MTProto 2.0 mijozi: kod, 2FA yoki bot token bilan kirish, eventlar, qayta ulanish |
+| **TL sxema** | Layer 229 ishlash vaqtida o'qiladi: `functions.*` / `types.*` maydon tekshiruvi bilan |
+| Arxitektura | Almashtiriladigan qatlamlar: HTTP sessiya, retry siyosati, storage, transport |
 | Klaviaturalar | `InlineKeyboard`, `ReplyKeyboard`, `RemoveKeyboard`, `ForceReply` |
 | Middleware | Har bir update oldidan/keyin kod ishlatish |
 | To'liq API | Har qanday Telegram metodi: `bot.bot.any_method(...)` |
@@ -229,64 +234,49 @@ Handler kerak bo'lsa `locale` yoki `i18n` argumentlarini ham qabul qilishi mumki
 
 ### Userbot (MTProto)
 
-Bot API userbotlarga kira olmaydi, shuning uchun Zafather alohida mustaqil
-MTProto client beradi. O'rnatish: `pip install "zafather[userbot]"`.
+Bot API foydalanuvchi akkaunti nomidan ishlay olmaydi, shuning uchun Zafather o'z
+MTProto 2.0 mijozini beradi (Telethon/Pyrogram'siz). O'rnatish:
+`pip install "zafather[userbot]"`, `api_id`/`api_hash` — my.telegram.org dan.
 
 ```python
+import asyncio
 from zafather import UserBot
 
-userbot = UserBot(
-    api_id=12345,
-    api_hash="API_HASH",
-    session="my_account",
-)
+userbot = UserBot(12345, "API_HASH", session="my_account")
 
-@userbot.on_message(pattern="/hello")
-async def hello(event):
-    await event.respond("Salom!")
+@userbot.on_message(pattern=r"^\.ping$", outgoing=True)
+async def ping(event):
+    await event.edit("pong")
 
-await userbot.run()
+@userbot.on_message(incoming=True, func=lambda e: e.is_private)
+async def salom(event):
+    if "salom" in event.text.lower():
+        await event.reply("Va alaykum assalom!")
+
+asyncio.run(userbot.run())   # telefon -> kod -> (2FA) so'raladi
 ```
 
-Event decoratorlari uchun `on_new_message()` va `on_callback_query()` aliaslari,
-manual boshqaruv uchun `add_handler()` / `remove_handler()` ham mavjud. Sessionni
-avtomatik yopish uchun `async with UserBot(...) as userbot:` ishlatish mumkin.
+- Kirish: `start(phone=..., code_callback=..., password=...)` yoki
+  `start(bot_token=...)`; har bir qiymat satr, funksiya yoki async funksiya.
+- Sessiya: `"nom"` (`nom.session.json`, `0600`), `StringSession()` yoki `None`
+  (faqat xotira). Sessiya akkauntga to'liq kirish beradi — uni maxfiy saqlang.
+- Eventlar: `on_message`, `on_edited`, `on_deleted`, `on_callback`,
+  `on(events.Raw(...))`; `events.StopPropagation` qolgan handlerlarni to'xtatadi.
+- Ishonchlilik: qisqa FLOOD_WAIT'da kutadi, DC migratsiyasi va uzilishdan keyin
+  qayta ulanish avtomatik, o'tkazib yuborilgan update'lar `getDifference` bilan olinadi.
 
-Universal MTProto request uchun:
+Istalgan TL metod (layer 229) xom so'rov sifatida:
 
 ```python
-result = await userbot.invoke(request)
+from zafather.mtproto import functions
+
+config = await userbot.invoke(functions.help.getConfig())
+await userbot.client.send_message("@username", "<b>Salom</b>", parse_mode="html")
 ```
 
-TL requestlar uchun past darajadagi builderlar ham mavjud:
-
-```python
-from zafather import TLRequest
-
-request = TLRequest(0x12345678).int32(7).string("hello")
-result = await userbot.invoke(request.to_bytes())
-```
-
-`api_id` va `api_hash` Telegram my.telegram.org saytidan olinadi. Session faylini
-maxfiy saqlang; uni repositoryga qo'shmang. MTProto auth, encryption va TL schema
-qatlamlari mustaqil ravishda rivojlantirilmoqda; custom transport backendini
-`transport=` orqali ulash mumkin. Default transport MTProto Abridged TCP bo'lib,
-DC host/port `dc_host=` va `dc_port=` bilan almashtiriladi.
-Auth key, DC, server salt va user ID `MTProtoSession` orqali session faylida
-saqlanadi.
-
-MTProto 2.0 uchun `AuthKey` AES-IGE encryption, `auth_key_id` va `msg_key`
-derivationni bajaradi. Kriptografiya faqat userbot extra orqali o'rnatiladi:
-`pip install "zafather[userbot]"`. Session fayli imkon qadar `0600` permission
-bilan yoziladi.
-
-Auth handshake’ning boshlang'ich bosqichi `AuthHandshake` orqali mavjud:
-`req_pq` yaratish, `resPQ` parse qilish va `pq` ni faktorlash.
-RSA fingerprint/PKCS#1 encryption, DH public value va shared secret uchun
-`RSAPublicKey` hamda `DHExchange` mavjud; `req_DH_params` builderi ham shu
-handshake qatlamiga kiradi. `server_DH_params_ok` va `dh_gen_ok` javoblari
-parse qilinadi, `new_nonce_hash1` tekshiriladi va tayyor auth key session’ga
-saqlanadi.
+Batafsil: [docs/uz/userbot.md](docs/uz/userbot.md) ·
+[RU](docs/ru/userbot.md) · [EN](docs/en/userbot.md); to'liq namuna —
+`examples/userbot.py`.
 
 ### 1. Handler e'lon qilish
 
@@ -310,8 +300,11 @@ Handler faqat **o'ziga kerak bo'lgan argumentlarni** so'raydi — framework avto
 | `bot` | `Bot` klienti |
 | `command`, `args` | `Command` filtridan |
 | `match` | `Regex` filtridan |
-| `chat_id`, `user_id` | Qulaylik uchun |
+| `chat_id`, `user_id`, `thread_id` | Qulaylik uchun |
 | `app` | `Zafather` obyekti |
+| `update`, `event_type`, `raw_state` | Xom update, uning turi va joriy holat nomi |
+| `exception` | Xato handlerlarida (`@bot.errors`) |
+| boshqa nomlar | Middleware yoki `bot.data` qo'shgan qiymatlar (`_`, `locale`, `db`, ...) |
 
 ### 2. `F` sehrli filtri
 
@@ -608,31 +601,45 @@ rasmiy hujjatdan tekshiring: matematik ifoda tegi
 
 ```
 zafather/
-├── __init__.py      # eksportlar
-├── enums.py         # ButtonStyle, UpdateType, ContentType ...
-├── __main__.py      # CLI (python -m zafather new ...)
-├── app.py           # Zafather: polling, dispatch, hooks
-├── bot.py           # Telegram API klienti
-├── router.py        # Router, handler, middleware
+├── app.py           # Zafather fasadi: router + dispatcher + polling/webhook
+├── bot.py           # Bot API klienti
+├── api/             # BaseSession/AiohttpSession, PayloadBuilder, RetryPolicy, server
+├── exceptions.py    # TelegramAPIError ierarxiyasi
+├── types/           # Message, User, Chat, CallbackQuery, Update ...
+├── handler.py       # handler imzosi va argument uzatish (DI)
 ├── filters.py       # Command, Text, Regex, StateFilter ...
 ├── magic.py         # F sehrli filtri
-├── fsm.py           # State, StatesGroup, FSMContext, storage
+├── router.py        # Router, middleware, ichki routerlar
+├── dispatcher.py    # update konteksti, FSM, xato handlerlari
+├── polling.py       # long polling
+├── webhook.py       # webhook server
+├── fsm/             # State, StatesGroup, FSMContext, strategiyalar, storage'lar
+├── keyboards.py     # InlineKeyboard, ReplyKeyboard ...
 ├── text.py          # premium emoji, HTML yorliqlari, TextBuilder
-├── managed.py       # ManagedBots, BotFarm (bot yaratadigan bot)
 ├── rich.py          # Rich Messages: HTML quruvchi, oqim (stream)
+├── managed.py       # ManagedBots, BotFarm (bot yaratadigan bot)
 ├── webapp.py        # Mini App: initData tekshiruvi, havolalar, metodlar
 ├── webserver.py     # Mini App backend serveri (aiohttp)
-├── types.py         # Message, User, Chat, CallbackQuery ...
-└── keyboards.py     # InlineKeyboard, ReplyKeyboard ...
+├── i18n.py, payments.py, middlewares.py, callback_data.py
+├── userbot.py       # UserBot fasadi
+├── mtproto/         # MTProto 2.0: tl/, crypto/, transport/, session/, client.py ...
+└── cli.py           # python -m zafather new ...
 ```
+
+Qatlamlar va SOLID tamoyillari: [docs/uz/architecture.md](docs/uz/architecture.md).
+0.4 dan o'tish: [docs/uz/migration-0.5.md](docs/uz/migration-0.5.md).
 
 ## Testlar
 
 ```bash
-python test_zafather.py     # yadro: 34 ta test
-python test_miniapp.py      # Mini App: 21 ta test
-python test_rich.py         # Rich Messages: 23 ta test
+pip install -e ".[dev]"
+pytest -q                                      # barcha testlar oflayn ishlaydi
+ruff check zafather tests examples && ruff format --check zafather tests examples
+mypy
 ```
+
+Bot API testlari `FakeSession` bilan, MTProto testlari esa haqiqiy MTProto 2.0
+protokolida gaplashadigan lokal soxta Telegram serveri bilan ishlaydi.
 
 ## Hissa qo'shish
 
@@ -641,8 +648,8 @@ Loyiha **ochiq** — pull request va takliflar mamnuniyat bilan qabul qilinadi.
 - Xatolik yoki taklif: [Issues](https://github.com/ismoilov299/zafather/issues) da yozing.
 - Kod yubormoqchi bo'lsangiz:
   1. Repozitoriyni fork qiling, alohida branch oching.
-  2. Har bir yangi imkoniyat uchun **test** yozing (`test_*.py` uslubida).
-  3. `python -m compileall -q zafather` va uchala test fayli o'tishini tekshiring.
+  2. Har bir yangi imkoniyat uchun `tests/` ichida **test** yozing.
+  3. `pytest`, `ruff` va `mypy` tekshiruvlari o'tishini tekshiring.
   4. Commit xabari: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` + o'zbekcha tavsif.
   5. `main` ga pull request oching.
 - Kod konvensiyalari va arxitektura qarorlari [CONTRIBUTING.md](CONTRIBUTING.md) da.

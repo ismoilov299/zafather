@@ -2,174 +2,164 @@
 RU: Zafather — работа с **Mini App** (Telegram Web App).
 EN: Zafather — working with **Mini App** (Telegram Web App).
 
-UZ: Uch qismdan iborat:
-RU: Состоит из трёх частей:
-EN: Consists of three parts:
-
-1. UZ: `validate()` — foydalanuvchi ma'lumotini tekshirish (eng muhimi!).
-   RU: `validate()` — проверка данных пользователя (самое важное!).
-   EN: `validate()` — validating user data (most important!).
-   UZ: Mini App'dan kelgan `initData` ni bot tokeni bilan tekshiradi.
-   RU: Проверяет `initData`, пришедший из Mini App, по токену бота.
-   EN: Verifies the `initData` coming from the Mini App against the bot token.
-2. UZ: `validate_third_party()` — token'siz tekshirish (Bot API 8.0+),
-   Telegram'ning Ed25519 ochiq kaliti orqali.
-   RU: `validate_third_party()` — проверка без токена (Bot API 8.0+),
-   через открытый ключ Ed25519 Telegram.
-   EN: `validate_third_party()` — validation without a token (Bot API 8.0+),
-   using Telegram's public Ed25519 key.
-3. UZ: `MiniApp` — bot tomonidagi metodlar: menyu tugmasi, `answerWebAppQuery`,
-   tayyor xabar/tugmalar, emoji status.
-   RU: `MiniApp` — методы со стороны бота: кнопка меню, `answerWebAppQuery`,
-   готовые сообщения/кнопки, статус emoji.
-   EN: `MiniApp` — bot-side methods: menu button, `answerWebAppQuery`,
-   ready messages/buttons, emoji status.
+UZ: Asosiy qism — `initData` ni server tomonda tekshirish: `validate()` (bot tokeni,
+HMAC-SHA256) yoki `validate_third_party()` (tokensiz, Ed25519, Bot API 8.0+).
+RU: Главное — проверка `initData` на сервере: `validate()` (токен бота, HMAC-SHA256)
+или `validate_third_party()` (без токена, Ed25519, Bot API 8.0+).
+EN: The key part is validating `initData` on the server: `validate()` (bot token,
+HMAC-SHA256) or `validate_third_party()` (no token, Ed25519, Bot API 8.0+).
 
 ::
 
-    from zafather import validate, WebAppAuthError
-
     try:
-        init = validate(init_data_string, TOKEN, max_age=3600)
+        init = validate(init_data, TOKEN, max_age=3600)
         print(init.user.id, init.user.first_name)
     except WebAppAuthError as exc:
-        print("Ishonchsiz ma'lumot:", exc)
+        print("Ishonchsiz / Недоверенные / Untrusted:", exc)
 
-UZ: **Hech qachon** `initData` ichidagi `user` ni tekshirmasdan ishonmang —
-uni brauzerda istalgan odam o'zgartirishi mumkin.
-RU: **Никогда** не доверяйте `user` внутри `initData` без проверки — его
-может изменить любой человек в браузере.
-EN: **Never** trust the `user` field inside `initData` without validation — any
-browser user can tamper with it.
+UZ: **Hech qachon** tekshirilmagan `user` ga ishonmang — uni brauzerda o'zgartirish mumkin.
+RU: **Никогда** не доверяйте непроверенному `user` — его можно подменить в браузере.
+EN: **Never** trust an unvalidated `user` — it can be forged in the browser.
 """
+
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import hmac
 import json
 import time
-from typing import Any, Dict, Optional, Union
+from collections.abc import Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qsl, quote, urlencode
 
-from .filters import Filter
+from .exceptions import OptionalDependencyError, ZafatherError
+from .filters import Filter, FilterResult
 
-#: Telegram'ning Ed25519 ochiq kalitlari (uchinchi tomon tekshiruvi uchun)
+if TYPE_CHECKING:
+    from .bot import Bot
+
+#: UZ: Telegram Ed25519 ochiq kalitlari. RU: Открытые ключи Ed25519 Telegram.
+#: EN: Telegram's Ed25519 public keys.
 TELEGRAM_PUBLIC_KEY_PROD = "e7bf03a2fa4602af4580703d88dda5bb59f32ed8b02a56c187fe7d34caed242d"
 TELEGRAM_PUBLIC_KEY_TEST = "40055058a4ee38156a06562e52eece92a771bcd8346a8c4615cb7376eddf72ec"
 
-#: initData ichida JSON bo'lgan maydonlar
 _JSON_FIELDS = ("user", "receiver", "chat")
+_INT_FIELDS = ("auth_date", "can_send_after")
+_UNSIGNED_FIELDS = ("hash", "signature")
 
 
-class WebAppAuthError(Exception):
-    """UZ: initData ishonchsiz yoki eskirgan.
-    RU: initData ненадёжный или устаревший.
-    EN: initData is invalid or stale.
+class WebAppAuthError(ZafatherError):
+    """UZ: `initData` ishonchsiz yoki eskirgan. RU: `initData` недоверенный или устаревший.
+    EN: `initData` is untrusted or expired.
     """
 
 
-class WebAppInitData:
-    """UZ: Tekshirilgan `initData`. Maydonlarga atribut orqali murojaat qilinadi.
-    RU: Проверенный `initData`. Поля доступны через атрибуты.
-    EN: A validated `initData`. Fields are accessible via attributes.
+class WebAppObject:
+    """UZ: `initData` ichidagi JSON obyekt (user, chat, receiver).
+    RU: JSON-объект внутри `initData` (user, chat, receiver).
+    EN: A JSON object inside `initData` (user, chat, receiver).
     """
 
-    def __init__(self, data: Dict[str, Any]) -> None:
-        self._data = data
+    __slots__ = ("_data",)
+
+    def __init__(self, data: Mapping[str, Any]) -> None:
+        self._data = dict(data)
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             raise AttributeError(name)
-        value = (self.__dict__.get("_data") or {}).get(name)
-        if isinstance(value, dict):
-            return _Obj(value)
-        return value
+        return self._data.get(name)
 
     @property
-    def raw(self) -> dict:
-        return self._data
-
-    @property
-    def user_id(self) -> Optional[int]:
-        user = self._data.get("user") or {}
-        return user.get("id")
-
-    @property
-    def age(self) -> float:
-        """initData yaratilganidan beri o'tgan soniyalar."""
-        return time.time() - float(self._data.get("auth_date", 0))
-
-    def get(self, name: str, default: Any = None) -> Any:
-        return self._data.get(name, default)
-
-    def __contains__(self, item: str) -> bool:
-        return item in self._data
-
-    def __repr__(self) -> str:
-        user = self._data.get("user") or {}
-        return f"<WebAppInitData user={user.get('id')} @{user.get('username')}>"
-
-
-class _Obj:
-    """UZ: initData ichidagi JSON obyektlari (user, chat, receiver) uchun qobiq.
-    RU: Обёртка для JSON-объектов внутри initData (user, chat, receiver).
-    EN: Wrapper for JSON objects inside initData (user, chat, receiver).
-    """
-
-    def __init__(self, data: dict) -> None:
-        self._data = data
-
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return (self.__dict__.get("_data") or {}).get(name)
-
-    @property
-    def raw(self) -> dict:
+    def raw(self) -> dict[str, Any]:
         return self._data
 
     @property
     def full_name(self) -> str:
-        parts = [self._data.get("first_name"), self._data.get("last_name")]
-        return " ".join(p for p in parts if p)
+        return " ".join(
+            part for part in (self._data.get("first_name"), self._data.get("last_name")) if part
+        )
 
     def __repr__(self) -> str:
-        return f"<{self._data.get('username') or self._data.get('id')}>"
+        return f"<WebAppObject {self._data.get('username') or self._data.get('id')}>"
 
 
-# --- ichki yordamchilar -------------------------------------------------------
+class WebAppInitData:
+    """UZ: Tekshirilgan `initData`; maydonlar atribut orqali o'qiladi.
+    RU: Проверенный `initData`; поля доступны как атрибуты.
+    EN: Validated `initData`; fields are available as attributes.
+    """
+
+    __slots__ = ("_data",)
+
+    def __init__(self, data: Mapping[str, Any]) -> None:
+        self._data = dict(data)
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        value = self._data.get(name)
+        return WebAppObject(value) if isinstance(value, dict) else value
+
+    @property
+    def raw(self) -> dict[str, Any]:
+        return self._data
+
+    @property
+    def user_id(self) -> int | None:
+        user = self._data.get("user")
+        return user.get("id") if isinstance(user, dict) else None
+
+    @property
+    def age(self) -> float:
+        """UZ: Yaratilganidan beri o'tgan soniyalar. RU: Секунды с момента создания.
+        EN: Seconds since creation.
+        """
+        return time.time() - float(self._data.get("auth_date") or 0)
+
+    def get(self, name: str, default: Any = None) -> Any:
+        return self._data.get(name, default)
+
+    def __contains__(self, item: object) -> bool:
+        return item in self._data
+
+    def __repr__(self) -> str:
+        user = self._data.get("user") or {}
+        return f"<WebAppInitData user={user.get('id')}>"
 
 
-def _pairs(init_data: str) -> list:
+def _pairs(init_data: str) -> list[tuple[str, str]]:
     if not init_data:
-        raise WebAppAuthError("initData bo'sh")
+        raise WebAppAuthError("initData is empty")
     try:
         return parse_qsl(init_data, strict_parsing=True, keep_blank_values=True)
     except ValueError as exc:
-        raise WebAppAuthError(f"initData formati noto'g'ri: {exc}") from exc
+        raise WebAppAuthError(f"Malformed initData: {exc}") from exc
 
 
-def _check_string(pairs: list, exclude=("hash", "signature")) -> str:
-    return "\n".join(
-        f"{key}={value}" for key, value in sorted(pairs) if key not in exclude
-    )
+def data_check_string(
+    pairs: Iterable[tuple[str, str]], exclude: Iterable[str] = _UNSIGNED_FIELDS
+) -> str:
+    """UZ: Imzolanadigan satr: `kalit=qiymat` juftliklari, alifbo tartibida, `\\n` bilan.
+    RU: Подписываемая строка: пары `ключ=значение` по алфавиту через `\\n`.
+    EN: The signed string: alphabetically sorted `key=value` pairs joined by `\\n`.
+    """
+    skipped = set(exclude)
+    return "\n".join(f"{key}={value}" for key, value in sorted(pairs) if key not in skipped)
 
 
-def _build(pairs: list) -> WebAppInitData:
-    data: Dict[str, Any] = dict(pairs)
+def _build(pairs: list[tuple[str, str]]) -> WebAppInitData:
+    data: dict[str, Any] = dict(pairs)
     for field in _JSON_FIELDS:
         if field in data:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 data[field] = json.loads(data[field])
-            except (ValueError, TypeError):
-                pass
-    for field in ("auth_date", "can_send_after"):
+    for field in _INT_FIELDS:
         if field in data:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 data[field] = int(data[field])
-            except (ValueError, TypeError):
-                pass
     return WebAppInitData(data)
 
 
@@ -178,223 +168,194 @@ def _check_age(data: WebAppInitData, max_age: int) -> None:
         return
     auth_date = data.raw.get("auth_date")
     if not auth_date:
-        raise WebAppAuthError("auth_date yo'q — muddatni tekshirib bo'lmaydi")
+        raise WebAppAuthError("auth_date is missing; cannot check freshness")
     age = time.time() - float(auth_date)
     if age > max_age:
-        raise WebAppAuthError(
-            f"initData eskirgan: {int(age)}s o'tgan (ruxsat: {max_age}s)"
-        )
+        raise WebAppAuthError(f"initData expired: {int(age)}s old (allowed {max_age}s)")
 
 
-# --- asosiy tekshiruv ---------------------------------------------------------
+def _secret_key(token: str) -> bytes:
+    return hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
 
 
-def validate(
-    init_data: str,
-    token: str,
-    max_age: int = 86400,
-) -> WebAppInitData:
-    """`initData` ni bot tokeni bilan tekshiradi (HMAC-SHA256).
-
-    Xato bo'lsa `WebAppAuthError` ko'taradi, aks holda `WebAppInitData` qaytaradi.
-    `max_age=0` — muddat tekshirilmaydi (tavsiya etilmaydi).
+def validate(init_data: str, token: str, max_age: int = 86400) -> WebAppInitData:
+    """UZ: `initData` ni bot tokeni bilan tekshiradi (HMAC-SHA256); `max_age=0` — muddat
+    tekshirilmaydi (tavsiya etilmaydi).
+    RU: Проверяет `initData` токеном бота (HMAC-SHA256); `max_age=0` — без проверки
+    срока (не рекомендуется).
+    EN: Validates `initData` with the bot token (HMAC-SHA256); `max_age=0` skips the
+    freshness check (not recommended).
     """
     pairs = _pairs(init_data)
     received = dict(pairs).get("hash")
     if not received:
-        raise WebAppAuthError("initData ichida `hash` yo'q")
-
-    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+        raise WebAppAuthError("initData has no hash")
     expected = hmac.new(
-        secret, _check_string(pairs).encode(), hashlib.sha256
+        _secret_key(token), data_check_string(pairs).encode(), hashlib.sha256
     ).hexdigest()
-
     if not hmac.compare_digest(expected, received):
-        raise WebAppAuthError("hash mos kelmadi — ma'lumot o'zgartirilgan bo'lishi mumkin")
-
+        raise WebAppAuthError("hash mismatch: initData was tampered with or belongs to another bot")
     data = _build(pairs)
     _check_age(data, max_age)
     return data
 
 
 def is_valid(init_data: str, token: str, max_age: int = 86400) -> bool:
-    """`validate()` ning `True/False` qaytaradigan varianti."""
+    """UZ: `validate()` ning True/False varianti. RU: Вариант `validate()` с True/False.
+    EN: A True/False variant of `validate()`.
+    """
     try:
         validate(init_data, token, max_age)
-        return True
     except WebAppAuthError:
         return False
+    return True
 
 
 def validate_third_party(
     init_data: str,
-    bot_id: Union[int, str],
+    bot_id: int | str,
     max_age: int = 86400,
     test_env: bool = False,
-    public_key: Optional[str] = None,
+    public_key: str | None = None,
 ) -> WebAppInitData:
-    """Token'siz tekshirish (Bot API 8.0+) — Telegram'ning Ed25519 imzosi orqali.
-
-    Mini App'ni sizning nomingizdan boshqa xizmat qayta ishlaganda kerak bo'ladi:
-    unga faqat `initData` va `bot_id` beriladi, token berilmaydi.
-
-    `cryptography` paketi talab qilinadi: ``pip install cryptography``
+    """UZ: Tokensiz tekshiruv (Bot API 8.0+), Telegram Ed25519 imzosi orqali;
+    `pip install "zafather[miniapp]"` talab qiladi.
+    RU: Проверка без токена (Bot API 8.0+) по подписи Ed25519 Telegram; требует
+    `pip install "zafather[miniapp]"`.
+    EN: Token-less validation (Bot API 8.0+) using Telegram's Ed25519 signature; needs
+    `pip install "zafather[miniapp]"`.
     """
     try:
         from cryptography.exceptions import InvalidSignature
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    except ImportError as exc:  # pragma: no cover
-        raise WebAppAuthError(
-            "Ed25519 tekshiruvi uchun `cryptography` kerak: pip install cryptography"
-        ) from exc
+    except ImportError as exc:
+        raise OptionalDependencyError("cryptography", "miniapp") from exc
 
     pairs = _pairs(init_data)
     signature = dict(pairs).get("signature")
     if not signature:
-        raise WebAppAuthError("initData ichida `signature` yo'q")
-
+        raise WebAppAuthError("initData has no signature")
     key_hex = public_key or (TELEGRAM_PUBLIC_KEY_TEST if test_env else TELEGRAM_PUBLIC_KEY_PROD)
-    check_string = f"{bot_id}:WebAppData\n" + _check_string(pairs)
-
-    padding = "=" * (-len(signature) % 4)
+    message = f"{bot_id}:WebAppData\n{data_check_string(pairs)}".encode()
     try:
-        raw_signature = base64.urlsafe_b64decode(signature + padding)
-    except (ValueError, TypeError) as exc:
-        raise WebAppAuthError("signature base64url formatida emas") from exc
-
-    try:
-        Ed25519PublicKey.from_public_bytes(bytes.fromhex(key_hex)).verify(
-            raw_signature, check_string.encode()
-        )
-    except InvalidSignature as exc:
-        raise WebAppAuthError("Ed25519 imzosi mos kelmadi") from exc
-
+        raw_signature = base64.urlsafe_b64decode(signature + "=" * (-len(signature) % 4))
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(key_hex)).verify(raw_signature, message)
+    except (ValueError, InvalidSignature) as exc:
+        raise WebAppAuthError("Ed25519 signature mismatch") from exc
     data = _build(pairs)
     _check_age(data, max_age)
     return data
 
 
 def parse_init_data(init_data: str) -> WebAppInitData:
-    """Tekshirmasdan faqat o'qish (test/debug uchun). Ishonch uchun ishlatmang!"""
+    """UZ: Tekshirmasdan o'qiydi (faqat debug uchun!). RU: Читает без проверки (только для
+    отладки!). EN: Parses without validation (debugging only!).
+    """
     return _build(_pairs(init_data))
 
 
-def sign(data: dict, token: str) -> str:
-    """Test uchun: berilgan maydonlardan haqiqiy `initData` qatorini yasaydi."""
-    payload = {}
-    for key, value in data.items():
-        payload[key] = json.dumps(value, separators=(",", ":")) if isinstance(value, (dict, list)) else str(value)
+def sign_init_data(fields: Mapping[str, Any], token: str) -> str:
+    """UZ: Testlar uchun haqiqiy imzoli `initData` yasaydi.
+    RU: Создаёт подписанный `initData` для тестов.
+    EN: Builds a correctly signed `initData` string for tests.
+    """
+    payload = {
+        key: json.dumps(value, separators=(",", ":"))
+        if isinstance(value, (dict, list))
+        else str(value)
+        for key, value in fields.items()
+    }
     payload.setdefault("auth_date", str(int(time.time())))
-    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
-    check = _check_string(list(payload.items()))
-    payload["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    check = data_check_string(payload.items())
+    payload["hash"] = hmac.new(_secret_key(token), check.encode(), hashlib.sha256).hexdigest()
     return urlencode(payload)
 
 
-# --- havolalar ----------------------------------------------------------------
+#: UZ: Qisqa nomlar. RU: Короткие имена. EN: Short aliases.
+parse = parse_init_data
+sign = sign_init_data
 
 
 def direct_link(
-    bot_username: str,
-    app_name: str,
-    start_param: Optional[str] = None,
-    mode: Optional[str] = None,
+    bot_username: str, app_name: str, start_param: str | None = None, mode: str | None = None
 ) -> str:
-    """To'g'ridan-to'g'ri Mini App havolasi: ``t.me/<bot>/<app>?startapp=...``
-
-    `mode="fullscreen"` — to'liq ekranda ochadi (Bot API 8.0+).
+    """UZ: `t.me/<bot>/<app>?startapp=...`; `mode="fullscreen"` (8.0+).
+    RU: `t.me/<bot>/<app>?startapp=...`; `mode="fullscreen"` (8.0+).
+    EN: `t.me/<bot>/<app>?startapp=...`; `mode="fullscreen"` (8.0+).
     """
     url = f"https://t.me/{bot_username.lstrip('@')}/{app_name}"
-    params = {}
-    if start_param:
-        params["startapp"] = start_param
-    if mode:
-        params["mode"] = mode
+    params = {key: value for key, value in (("startapp", start_param), ("mode", mode)) if value}
     return f"{url}?{urlencode(params)}" if params else url
 
 
-def main_app_link(bot_username: str, start_param: Optional[str] = None) -> str:
-    """Botning asosiy Mini App'i: ``t.me/<bot>?startapp=...`` (Bot API 7.8+)."""
+def main_app_link(bot_username: str, start_param: str | None = None) -> str:
+    """UZ: Asosiy Mini App: `t.me/<bot>?startapp=...`. RU: Главный Mini App.
+    EN: The main Mini App: `t.me/<bot>?startapp=...`.
+    """
     url = f"https://t.me/{bot_username.lstrip('@')}"
     return f"{url}?startapp={quote(start_param)}" if start_param else url
 
 
-def attach_link(bot_username: str, start_param: Optional[str] = None) -> str:
-    """Attachment menu havolasi: ``t.me/<bot>?attach=...``"""
-    url = f"https://t.me/{bot_username.lstrip('@')}?attach={bot_username.lstrip('@')}"
+def attach_link(bot_username: str, start_param: str | None = None) -> str:
+    """UZ: Attachment menyu havolasi. RU: Ссылка меню вложений. EN: An attachment menu link."""
+    username = bot_username.lstrip("@")
+    url = f"https://t.me/{username}?attach={username}"
     return f"{url}&startattach={quote(start_param)}" if start_param else url
 
 
-# --- bot tomonidagi metodlar --------------------------------------------------
-
-
 class MiniApp:
-    """Mini App bilan bog'liq Bot API metodlari ustidagi qobiq.
-
-        app = MiniApp(bot.bot)
-        await app.set_menu_button("🚀 Ochish", "https://example.com/app")
+    """UZ: Mini App bilan bog'liq Bot API metodlari (`app.mini_app`).
+    RU: Методы Bot API, связанные с Mini App (`app.mini_app`).
+    EN: Mini App related Bot API methods (`app.mini_app`).
     """
 
-    def __init__(self, bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
-    async def set_menu_button(
-        self, text: str, url: str, chat_id: Optional[int] = None
-    ):
-        """Chatdagi menyu tugmasini Mini App'ga aylantiradi."""
-        return await self.bot.call(
-            "setChatMenuButton",
-            chat_id=chat_id,
-            menu_button={"type": "web_app", "text": text, "web_app": {"url": url}},
-        )
+    async def set_menu_button(self, text: str, url: str, chat_id: int | None = None) -> Any:
+        menu_button = {"type": "web_app", "text": text, "web_app": {"url": url}}
+        return await self.bot.call("setChatMenuButton", chat_id=chat_id, menu_button=menu_button)
 
-    async def reset_menu_button(self, chat_id: Optional[int] = None):
-        """Menyu tugmasini standart holatga qaytaradi."""
+    async def reset_menu_button(self, chat_id: int | None = None) -> Any:
         return await self.bot.call(
             "setChatMenuButton", chat_id=chat_id, menu_button={"type": "commands"}
         )
 
-    async def get_menu_button(self, chat_id: Optional[int] = None):
+    async def get_menu_button(self, chat_id: int | None = None) -> Any:
         return await self.bot.call("getChatMenuButton", chat_id=chat_id)
 
-    async def answer_query(self, query_id: str, result: dict):
-        """`answerWebAppQuery` — Mini App nomidan chatga xabar yuboradi.
-
-        `query_id` — `initData.query_id`, `result` — InlineQueryResult dict.
+    async def answer_query(self, query_id: str, result: Mapping[str, Any]) -> Any:
+        """UZ: `answerWebAppQuery` — Mini App nomidan xabar. RU: Сообщение от имени Mini App.
+        EN: `answerWebAppQuery` — sends a message on behalf of the Mini App.
         """
-        return await self.bot.call(
-            "answerWebAppQuery", web_app_query_id=query_id, result=result
-        )
+        return await self.bot.call("answerWebAppQuery", web_app_query_id=query_id, result=result)
 
-    async def answer_text(self, query_id: str, text: str, **kwargs):
-        """`answer_query` ning matn uchun qisqartmasi."""
-        result = {
+    async def answer_text(self, query_id: str, text: str, **fields: Any) -> Any:
+        result: dict[str, Any] = {
             "type": "article",
-            "id": kwargs.pop("id", str(int(time.time() * 1000))),
-            "title": kwargs.pop("title", text[:60]),
+            "id": fields.pop("id", str(time.time_ns())),
+            "title": fields.pop("title", text[:60]),
             "input_message_content": {
                 "message_text": text,
-                "parse_mode": kwargs.pop("parse_mode", "HTML"),
+                "parse_mode": fields.pop("parse_mode", "HTML"),
             },
+            **fields,
         }
-        result.update(kwargs)
         return await self.answer_query(query_id, result)
 
-    async def save_prepared_message(self, user_id: int, result: dict, **kwargs):
-        """`savePreparedInlineMessage` — Mini App'dan `shareMessage` uchun."""
+    async def save_prepared_message(
+        self, user_id: int, result: Mapping[str, Any], **params: Any
+    ) -> Any:
         return await self.bot.call(
-            "savePreparedInlineMessage", user_id=user_id, result=result, **kwargs
+            "savePreparedInlineMessage", user_id=user_id, result=result, **params
         )
 
-    async def save_prepared_button(self, **params):
-        """`savePreparedKeyboardButton` (Bot API 9.6+) — Mini App'dan
-        foydalanuvchi/chat/managed bot so'rash uchun tugma tayyorlaydi."""
+    async def save_prepared_button(self, **params: Any) -> Any:
         return await self.bot.call("savePreparedKeyboardButton", **params)
 
     async def set_emoji_status(
-        self, user_id: int, custom_emoji_id: str, expiration_date: Optional[int] = None
-    ):
-        """Foydalanuvchi emoji statusini o'rnatadi (avval ruxsat so'ralishi kerak)."""
+        self, user_id: int, custom_emoji_id: str, expiration_date: int | None = None
+    ) -> Any:
         return await self.bot.call(
             "setUserEmojiStatus",
             user_id=user_id,
@@ -403,37 +364,52 @@ class MiniApp:
         )
 
 
-# --- filtr --------------------------------------------------------------------
-
-
 class WebAppData(Filter):
-    """Mini App `sendData()` orqali yuborgan ma'lumot (faqat reply-keyboard app'lar).
+    """UZ: Mini App `sendData()` orqali yuborgan ma'lumot (reply-klaviatura ilovalari).
+    Handlerga `web_app_data` (JSON bo'lsa `dict`) va `web_app_button` keladi.
+    RU: Данные, отправленные Mini App через `sendData()` (приложения reply-клавиатуры).
+    В handler передаются `web_app_data` (для JSON — `dict`) и `web_app_button`.
+    EN: Data sent by a Mini App via `sendData()` (reply-keyboard apps). Injects
+    `web_app_data` (a `dict` for JSON) and `web_app_button`.
 
-        @bot.message(WebAppData())
-        async def on_data(m, web_app_data):
-            await m.answer(f"Qabul qilindi: {web_app_data}")
-
-    JSON bo'lsa avtomatik `dict` ga aylantiriladi. Ushbu kanal **imzolanmagan**,
-    shuning uchun muhim amallar uchun `initData` bilan backend tekshiruvidan
-    foydalaning.
+    UZ: Bu kanal imzolanmagan — muhim amallar uchun `initData` tekshiruvidan foydalaning.
+    RU: Этот канал не подписан — для важных действий проверяйте `initData`.
+    EN: This channel is unsigned — use `initData` validation for important actions.
     """
 
-    def __init__(self, button_text: Optional[str] = None):
+    def __init__(self, button_text: str | None = None) -> None:
         self.button_text = button_text
 
-    async def __call__(self, event, data: dict = None):
+    async def __call__(self, event: Any, data: Mapping[str, Any] | None = None) -> FilterResult:
         payload = getattr(event, "web_app_data", None)
         if payload is None:
             return False
-        if self.button_text and payload.button_text != self.button_text:
+        button_text = payload.button_text
+        if self.button_text is not None and button_text != self.button_text:
             return False
-        value = payload.data
-        try:
+        value: Any = payload.data
+        with contextlib.suppress(TypeError, ValueError):
             value = json.loads(value)
-        except (ValueError, TypeError):
-            pass
-        return {"web_app_data": value, "web_app_button": payload.button_text}
+        return {"web_app_data": value, "web_app_button": button_text}
 
 
-#: qisqa nom
-parse = parse_init_data
+__all__ = [
+    "TELEGRAM_PUBLIC_KEY_PROD",
+    "TELEGRAM_PUBLIC_KEY_TEST",
+    "MiniApp",
+    "WebAppAuthError",
+    "WebAppData",
+    "WebAppInitData",
+    "WebAppObject",
+    "attach_link",
+    "data_check_string",
+    "direct_link",
+    "is_valid",
+    "main_app_link",
+    "parse",
+    "parse_init_data",
+    "sign",
+    "sign_init_data",
+    "validate",
+    "validate_third_party",
+]
