@@ -11,7 +11,7 @@
 **Zafather** — Telegram botlar yozish uchun yengil, async va tashqi bog'liqliklari kam framework.
 Faqat bitta kutubxonaga (`aiohttp`) tayanadi, ichini o'qib tushunish oson.
 
-**Bot API 10.3** darajasida: rangli tugmalar, premium emoji, bot yaratadigan botlar,
+**Bot API 10.4** darajasida: rangli tugmalar, premium emoji, bot yaratadigan botlar,
 ephemeral xabarlar, guest mode, reaksiyalar, obunalar. Userbotlar uchun o'z
 **MTProto 2.0** mijozi bor (TL layer 229, Telethon'siz).
 
@@ -19,7 +19,7 @@ ephemeral xabarlar, guest mode, reaksiyalar, obunalar. Userbotlar uchun o'z
 **Zafather** — лёгкий async-фреймворк для создания Telegram-ботов с минимальными зависимостями.
 Поддерживает только одну библиотеку (`aiohttp`), код читабелен и прост в изучении.
 
-**Bot API 10.3**: цветные кнопки, premium emoji, боты, создающие ботов,
+**Bot API 10.4**: цветные кнопки, premium emoji, боты, создающие ботов,
 ephemeral-сообщения, guest mode, реакции, подписки. Для userbot есть собственный
 клиент **MTProto 2.0** (TL layer 229, без Telethon).
 
@@ -27,7 +27,7 @@ ephemeral-сообщения, guest mode, реакции, подписки. Дл
 **Zafather** — a lightweight async framework for building Telegram bots with minimal dependencies.
 It relies on only one library (`aiohttp`) and is designed to be easy to read and understand.
 
-**Bot API 10.3** support includes colored buttons, premium emoji, bots that create bots,
+**Bot API 10.4** support includes colored buttons, premium emoji, bots that create bots,
 ephemeral messages, guest mode, reactions, and subscriptions. Userbots get a built-in
 **MTProto 2.0** client (TL layer 229, no Telethon).
 
@@ -527,6 +527,39 @@ async def on_data(m, web_app_data):     # JSON bo'lsa avtomatik dict bo'ladi
   chaqirilishi bloklandi. Ilovangizda ishonchsiz saytlarga havolalar bo'lmasin.
 
 ---
+
+## HTML Widgets (Bot API 10.4)
+
+```python
+from zafather import WidgetQuery
+
+@bot.command("widget")
+async def widget(message):
+    await message.answer_widget(
+        "<button onclick=\"TelegramWidget.request('refresh')\">Refresh</button>",
+        caption="Widget", allow_queries=True, chat_data='{"n":0}',
+    )
+
+@bot.widget_query()
+async def refresh(query: WidgetQuery):
+    await query.answer('{"ok":true}')
+```
+
+UZ: HTML widgetlar, shared holat, inline kontent, forward va wallet so'rovlari.
+Production'da hozir faqat shaxsiy chat; guruh, inline va forward — test serverida.
+RU: HTML-виджеты, общее состояние, inline-контент, запросы пересылок и кошелька.
+Production пока поддерживает личные чаты; группы, inline и пересылки — на тестовом сервере.
+EN: HTML widgets, shared state, inline content, forwarded and wallet queries.
+Production currently supports private chats; groups, inline and forwards require the test server.
+
+`send_widget`, `send_shared_widget`, `answer_widget_query`,
+`edit_message_widget_data`, `edit_shared_widget_data`; `@bot.shared_widget_query()`;
+`InputWidgetMessageContent`, `InputSharedWidgetMessageContent`, `widget_size`.
+HTML 32 KB / zlib-9 4 KB; state/result 1024 UTF-8 bytes. Answer within 15 seconds;
+answers do not edit state. `None` preserves state, `""` clears it.
+
+[UZ](docs/uz/widgets.md) · [RU](docs/ru/widgets.md) · [EN](docs/en/widgets.md) ·
+[`examples/widget_bot.py`](examples/widget_bot.py)
 
 ## Rich Messages (Bot API 10.1 / 10.3)
 

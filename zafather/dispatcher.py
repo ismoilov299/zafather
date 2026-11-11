@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from .fsm import BaseStorage, FSMContext, FSMStrategy
-from .types import Update
+from .types import SharedWidgetQuery, Update, WidgetQuery
 
 if TYPE_CHECKING:
     from .bot import Bot
@@ -40,6 +40,8 @@ class EventScope:
         user = getattr(event, "from_user", None) or getattr(event, "user", None)
         thread_id = event.message_thread_id if getattr(event, "is_topic_message", None) else None
         chat_id = chat.id if chat is not None else (user.id if user is not None else None)
+        if isinstance(event, (WidgetQuery, SharedWidgetQuery)) and chat is None:
+            chat_id = None
         user_id = user.id if user is not None else chat_id
         return cls(chat_id, user_id, thread_id)
 

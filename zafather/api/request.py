@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any
 
 from ..files import InputFile
+from ..widgets import validate_widget_params
 
 #: UZ: Matnli metodlar: (matn maydoni, entity maydoni).
 #: RU: Методы с текстом: (поле текста, поле entity).
@@ -25,6 +26,8 @@ FORMATTED_TEXT_FIELDS: Mapping[str, tuple[str, str]] = {
     "sendDocument": ("caption", "caption_entities"),
     "sendAnimation": ("caption", "caption_entities"),
     "sendVoice": ("caption", "caption_entities"),
+    "sendWidget": ("caption", "caption_entities"),
+    "sendSharedWidget": ("caption", "caption_entities"),
     "sendPaidMedia": ("caption", "caption_entities"),
     "copyMessage": ("caption", "caption_entities"),
     "editMessageCaption": ("caption", "caption_entities"),
@@ -78,6 +81,7 @@ class PayloadBuilder:
                 payload.fields[key] = self._convert(value, payload.files)
         if "parse_mode" not in params:
             self._apply_default_parse_mode(method, payload.fields)
+        validate_widget_params(method, payload.fields)
         return payload
 
     def _convert(self, value: Any, files: dict[str, InputFile]) -> Any:

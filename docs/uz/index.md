@@ -1,6 +1,6 @@
 # Zafather hujjatlari
 
-Zafather — Telegram botlar (Bot API 10.3) va userbotlar (MTProto 2.0, TL layer
+Zafather — Telegram botlar (Bot API 10.4) va userbotlar (MTProto 2.0, TL layer
 229) uchun yengil async framework. Majburiy bog'liqlik faqat `aiohttp`;
 `cryptography` ixtiyoriy (Mini App Ed25519 tekshiruvi va userbotlar uchun),
 `redis` ham ixtiyoriy (`RedisStorage`).
@@ -9,6 +9,7 @@ Zafather — Telegram botlar (Bot API 10.3) va userbotlar (MTProto 2.0, TL layer
 
 - [Arxitektura](architecture.md): qatlamlar, mas'uliyatlar va kengaytirish nuqtalari.
 - [Userbot (MTProto)](userbot.md): kirish, eventlar, so'rovlar va sessiyalar.
+- [HTML widgetlar](widgets.md): yuborish, holat, so'rovlar, inline va wallet.
 - [0.5 ga o'tish](migration-0.5.md): nima o'zgardi va qanday yangilash kerak.
 - [Bot API mosligi](api-compatibility.md)
 - [Test va docs qoidasi](testing-and-docs.md)

@@ -1,6 +1,6 @@
 # Документация Zafather
 
-Zafather — легкий async-фреймворк для Telegram-ботов (Bot API 10.3) и userbot
+Zafather — легкий async-фреймворк для Telegram-ботов (Bot API 10.4) и userbot
 (MTProto 2.0, TL layer 229). Единственная обязательная зависимость — `aiohttp`;
 `cryptography` опциональна (проверка Ed25519 для Mini App и userbot), `redis`
 тоже опционален (`RedisStorage`).
@@ -9,6 +9,7 @@ Zafather — легкий async-фреймворк для Telegram-ботов (B
 
 - [Архитектура](architecture.md): слои, ответственность и точки расширения.
 - [Userbot (MTProto)](userbot.md): вход, события, запросы и сессии.
+- [HTML-виджеты](widgets.md): отправка, состояние, запросы, inline и кошелёк.
 - [Переход на 0.5](migration-0.5.md): что изменилось и как обновиться.
 - [Совместимость с Bot API](api-compatibility.md)
 - [Правило тестов и документации](testing-and-docs.md)

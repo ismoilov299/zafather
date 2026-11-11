@@ -28,6 +28,7 @@ from .models import (
     Voice,
     WebAppData,
 )
+from .widgets import ExternalReplyInfo, Widget
 
 _CONTENT_TYPES = tuple(
     value for name, value in vars(ContentType).items() if name.isupper() and isinstance(value, str)
@@ -157,6 +158,45 @@ class Message(TelegramObject):
         """
         return await self._send("sendRichMessage", rich_message=rich, **kwargs)
 
+    async def answer_widget(self, html: str, **kwargs: Any) -> Any:
+        """UZ: Widget yuboradi: `await message.answer_widget('<b>Hi</b>')`.
+        RU: Отправляет виджет: `await message.answer_widget('<b>Hi</b>')`.
+        EN: Sends a widget: `await message.answer_widget('<b>Hi</b>')`.
+        """
+        defaults = self._send_defaults()
+        defaults.pop("business_connection_id", None)
+        return await self._client().send_widget(html=html, **{**defaults, **kwargs})
+
+    async def reply_widget(self, html: str, **kwargs: Any) -> Any:
+        """UZ: Widget bilan javob: `await message.reply_widget('<b>Hi</b>')`.
+        RU: Ответ виджетом: `await message.reply_widget('<b>Hi</b>')`.
+        EN: Replies with a widget: `await message.reply_widget('<b>Hi</b>')`.
+        """
+        kwargs.setdefault("reply_parameters", {"message_id": self.message_id})
+        return await self.answer_widget(html, **kwargs)
+
+    async def answer_shared_widget(self, widget_id: str, **kwargs: Any) -> Any:
+        """UZ: Mavjud widget: `await message.answer_shared_widget('widget-id')`.
+        RU: Существующий виджет: `await message.answer_shared_widget('widget-id')`.
+        EN: Existing widget: `await message.answer_shared_widget('widget-id')`.
+        """
+        defaults = self._send_defaults()
+        defaults.pop("business_connection_id", None)
+        return await self._client().send_shared_widget(
+            widget_id=widget_id, **{**defaults, **kwargs}
+        )
+
+    async def edit_widget_data(
+        self, *, public_data: str | None = None, chat_data: str | None = None, **kwargs: Any
+    ) -> Any:
+        """UZ: Widget holati: `await message.edit_widget_data(chat_data='{}')`.
+        RU: Состояние виджета: `await message.edit_widget_data(chat_data='{}')`.
+        EN: Widget state: `await message.edit_widget_data(chat_data='{}')`.
+        """
+        return await self._client().edit_message_widget_data(
+            **self._target(), public_data=public_data, chat_data=chat_data, **kwargs
+        )
+
     async def answer_ephemeral(self, text: str, **kwargs: Any) -> Any:
         """UZ: Guruhda faqat shu foydalanuvchiga ko'rinadigan xabar (Bot API 10.3).
         RU: Сообщение, видимое в группе только этому пользователю (Bot API 10.3).
@@ -266,6 +306,8 @@ class Message(TelegramObject):
 
 
 Message.FIELD_TYPES = {
+    "widget": Widget,
+    "external_reply": ExternalReplyInfo,
     "from": User,
     "sender_chat": Chat,
     "sender_business_bot": User,

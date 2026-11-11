@@ -35,6 +35,7 @@ from .queries import (
     PreCheckoutQuery,
     ShippingQuery,
 )
+from .widgets import SharedWidgetQuery, WidgetQuery
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -72,6 +73,8 @@ Update.FIELD_TYPES = {
     UpdateType.INLINE_QUERY: InlineQuery,
     UpdateType.CHOSEN_INLINE_RESULT: ChosenInlineResult,
     UpdateType.CALLBACK_QUERY: CallbackQuery,
+    UpdateType.WIDGET_QUERY: WidgetQuery,
+    UpdateType.SHARED_WIDGET_QUERY: SharedWidgetQuery,
     UpdateType.SHIPPING_QUERY: ShippingQuery,
     UpdateType.PRE_CHECKOUT_QUERY: PreCheckoutQuery,
     UpdateType.PURCHASED_PAID_MEDIA: PaidMediaPurchased,

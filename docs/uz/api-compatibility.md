@@ -6,9 +6,16 @@ e'lon qiladi.
 
 | Zafather | Bot API | MTProto layer | Holat |
 |---|---:|---:|---|
-| 0.5.0 | 10.3 | 229 | Joriy |
+| 0.6.0 | 10.4 | 229 | Joriy |
+| 0.5.0 | 10.3 | 229 | Oldingi |
 | 0.4.2 | 10.2 | tajribaviy | Nashr qilingan |
 | 0.4.1 | 10.2 | — | Nashr qilingan |
+
+## 10.4 widgetlari
+
+Widget metodlari, modellari, routing va tekshiruvlar [Widgetlar](widgets.md) da.
+Production'da shaxsiy chat; guruh, inline va forward test serverida ishlaydi.
+Boshqa yangi 10.4 metodlari dinamik Bot API proksi orqali chaqiriladi.
 
 ## 10.3 uchun qoidalar
 

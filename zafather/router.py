@@ -138,6 +138,24 @@ class Router:
     ) -> Callable[[CallbackT], CallbackT]:
         return self.on(UpdateType.CALLBACK_QUERY, *_with_state(filters, state), **flags)
 
+    def widget_query(
+        self, *filters: Any, state: Any = UNSET, **flags: Any
+    ) -> Callable[[CallbackT], CallbackT]:
+        """UZ: Widget so'rovi: `@app.widget_query(F.data == 'refresh')`.
+        RU: Запрос виджета: `@app.widget_query(F.data == 'refresh')`.
+        EN: Widget query: `@app.widget_query(F.data == 'refresh')`.
+        """
+        return self.on(UpdateType.WIDGET_QUERY, *_with_state(filters, state), **flags)
+
+    def shared_widget_query(
+        self, *filters: Any, state: Any = UNSET, **flags: Any
+    ) -> Callable[[CallbackT], CallbackT]:
+        """UZ: Forward so'rovi: `@app.shared_widget_query(F.data == 'vote:1')`.
+        RU: Запрос пересланного виджета: `@app.shared_widget_query(F.data == 'vote:1')`.
+        EN: Forward query: `@app.shared_widget_query(F.data == 'vote:1')`.
+        """
+        return self.on(UpdateType.SHARED_WIDGET_QUERY, *_with_state(filters, state), **flags)
+
     def edited_message(self, *filters: Any, **flags: Any) -> Callable[[CallbackT], CallbackT]:
         return self.on(UpdateType.EDITED_MESSAGE, *filters, **flags)
 

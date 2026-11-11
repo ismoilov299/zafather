@@ -26,7 +26,7 @@ from .exceptions import (
 )
 from .files import InputFile
 from .payments import StarsAPI
-from .types import TelegramObject, User, wrap_result
+from .types import Message, TelegramObject, User, wrap_result
 
 if TYPE_CHECKING:
     from .rich import RichStream
@@ -174,6 +174,105 @@ class Bot:
         EN: Calls an API method and wraps the result into a model.
         """
         return wrap_result(await self.call(method, **params), self)
+
+    async def send_widget(
+        self,
+        chat_id: int | str,
+        html: str,
+        *,
+        width: int | None = None,
+        height: int | None = None,
+        public_data: str | None = None,
+        chat_data: str | None = None,
+        allow_queries: bool | None = None,
+        is_shared: bool | None = None,
+        **params: Any,
+    ) -> Message:
+        """UZ: Widget yuborish: `await bot.send_widget(1, '<b>Hi</b>')`.
+        RU: Отправка виджета: `await bot.send_widget(1, '<b>Hi</b>')`.
+        EN: Send a widget: `await bot.send_widget(1, '<b>Hi</b>')`.
+        """
+        result: Message = await self.request(
+            "sendWidget",
+            chat_id=chat_id,
+            html=html,
+            width=width,
+            height=height,
+            public_data=public_data,
+            chat_data=chat_data,
+            allow_queries=allow_queries,
+            is_shared=is_shared,
+            **params,
+        )
+        return result
+
+    async def send_shared_widget(
+        self, chat_id: int | str, widget_id: str, *, chat_data: str | None = None, **params: Any
+    ) -> Message:
+        """UZ: Mavjud widget: `await bot.send_shared_widget(1, 'widget-id')`.
+        RU: Существующий виджет: `await bot.send_shared_widget(1, 'widget-id')`.
+        EN: Existing widget: `await bot.send_shared_widget(1, 'widget-id')`.
+        """
+        result: Message = await self.request(
+            "sendSharedWidget", chat_id=chat_id, widget_id=widget_id, chat_data=chat_data, **params
+        )
+        return result
+
+    async def answer_widget_query(
+        self, widget_query_id: str, data: str | None = None, **params: Any
+    ) -> bool:
+        """UZ: So'rov javobi: `await bot.answer_widget_query('query-id', 'ok')`.
+        RU: Ответ на запрос: `await bot.answer_widget_query('query-id', 'ok')`.
+        EN: Answer a query: `await bot.answer_widget_query('query-id', 'ok')`.
+        """
+        result: bool = await self.request(
+            "answerWidgetQuery", widget_query_id=widget_query_id, data=data, **params
+        )
+        return result
+
+    async def edit_message_widget_data(
+        self,
+        *,
+        chat_id: int | str | None = None,
+        message_id: int | None = None,
+        inline_message_id: str | None = None,
+        public_data: str | None = None,
+        chat_data: str | None = None,
+        **params: Any,
+    ) -> bool:
+        """UZ: Xabar holati: `await bot.edit_message_widget_data(chat_id=1, message_id=2,
+        chat_data='{}')`; `None` saqlaydi, `''` tozalaydi.
+        RU: Данные сообщения: `await bot.edit_message_widget_data(chat_id=1, message_id=2,
+        chat_data='{}')`; `None` сохраняет, `''` очищает.
+        EN: Message state: `await bot.edit_message_widget_data(chat_id=1, message_id=2,
+        chat_data='{}')`; `None` preserves data, `''` clears it.
+        """
+        result: bool = await self.request(
+            "editMessageWidgetData",
+            chat_id=chat_id,
+            message_id=message_id,
+            inline_message_id=inline_message_id,
+            public_data=public_data,
+            chat_data=chat_data,
+            **params,
+        )
+        return result
+
+    async def edit_shared_widget_data(
+        self, widget_id: str, public_data: str, *, cache_time: int | None = None, **params: Any
+    ) -> bool:
+        """UZ: Umumiy holat: `await bot.edit_shared_widget_data('widget-id', '{}')`.
+        RU: Общее состояние: `await bot.edit_shared_widget_data('widget-id', '{}')`.
+        EN: Shared state: `await bot.edit_shared_widget_data('widget-id', '{}')`.
+        """
+        result: bool = await self.request(
+            "editSharedWidgetData",
+            widget_id=widget_id,
+            public_data=public_data,
+            cache_time=cache_time,
+            **params,
+        )
+        return result
 
     def __getattr__(self, name: str) -> Callable[..., Awaitable[Any]]:
         if name.startswith("_"):

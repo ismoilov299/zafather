@@ -196,6 +196,12 @@ class FakeTelegramServer:
         finally:
             with contextlib.suppress(ValueError):
                 self.connections.remove(connection)
+            # UZ: Server transportini ham yoping, aks holda Python 3.12 teardown kutib qoladi.
+            # RU: Закрывайте и серверный transport, иначе teardown Python 3.12 зависает.
+            # EN: Close the server transport too, or Python 3.12 teardown can hang.
+            writer.close()
+            with contextlib.suppress(ConnectionError):
+                await writer.wait_closed()
 
     async def _write(self, connection: Connection, packet: bytes) -> None:
         connection.writer.write(connection.codec.encode(packet))

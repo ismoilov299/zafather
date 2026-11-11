@@ -1,6 +1,6 @@
-"""UZ: Telegram API obyektlari (Bot API 10.3).
-RU: Объекты Telegram API (Bot API 10.3).
-EN: Telegram API objects (Bot API 10.3).
+"""UZ: Telegram API obyektlari (Bot API 10.4).
+RU: Объекты Telegram API (Bot API 10.4).
+EN: Telegram API objects (Bot API 10.4).
 """
 
 from .base import TelegramObject, wrap_value
@@ -48,6 +48,18 @@ from .queries import (
     ShippingQuery,
 )
 from .update import Update, wrap_result
+from .widgets import (
+    ExternalReplyInfo,
+    SharedWidgetQuery,
+    TonWalletCard,
+    Widget,
+    WidgetQuery,
+    WidgetQueryType,
+    WidgetQueryTypeData,
+    WidgetQueryTypeSentTransaction,
+    WidgetQueryTypeSignData,
+    WidgetQueryWallet,
+)
 
 __all__ = [
     "Animation",
@@ -66,6 +78,7 @@ __all__ = [
     "Contact",
     "Dice",
     "Document",
+    "ExternalReplyInfo",
     "File",
     "InlineQuery",
     "Location",
@@ -81,9 +94,11 @@ __all__ = [
     "PollAnswer",
     "PollOption",
     "PreCheckoutQuery",
+    "SharedWidgetQuery",
     "ShippingQuery",
     "Sticker",
     "TelegramObject",
+    "TonWalletCard",
     "Update",
     "User",
     "Venue",
@@ -91,6 +106,13 @@ __all__ = [
     "VideoNote",
     "Voice",
     "WebAppData",
+    "Widget",
+    "WidgetQuery",
+    "WidgetQueryType",
+    "WidgetQueryTypeData",
+    "WidgetQueryTypeSentTransaction",
+    "WidgetQueryTypeSignData",
+    "WidgetQueryWallet",
     "wrap_result",
     "wrap_value",
 ]

@@ -4,6 +4,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 
 ## [Unreleased]
 
+## [0.6.0]
+
+### Qo'shildi
+- Bot API 10.4 widgetlari: `send_widget`, `send_shared_widget`,
+  `answer_widget_query`, `edit_message_widget_data`, `edit_shared_widget_data`.
+- `Widget`, `WidgetQuery`, `SharedWidgetQuery`, wallet so'rov turlari;
+  `@router.widget_query()` / `@router.shared_widget_query()`, polling/webhook update'lari.
+- `Message.answer_widget`, `reply_widget`, `answer_shared_widget`, `edit_widget_data`;
+  `external_reply.widget` modeli va widget kontent filtri.
+- `InputWidgetMessageContent`, `InputSharedWidgetMessageContent`, `widget_size`;
+  HTTP'dan oldin UTF-8/zlib hajmi, holat, javob va tahrir koordinatalari tekshiruvi.
+- Oflayn widget testlari, hisoblagich namunasi va UZ/RU/EN widget qo'llanmalari.
+
+### O'zgardi
+- `BOT_API_VERSION` — 10.4; widget caption'lari standart parse mode'ni oladi.
+- Inline/forward widget so'rovlarining DI kontekstida noma'lum chat `None` bo'lib qoladi.
+
 ## [0.5.0]
 Kutubxona toza arxitektura va SOLID tamoyillari asosida to'liq qayta yozildi.
 O'tish qo'llanmasi: [docs/uz/migration-0.5.md](docs/uz/migration-0.5.md)

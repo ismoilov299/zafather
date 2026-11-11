@@ -6,9 +6,16 @@ Zafather declares its supported Telegram Bot API level through
 
 | Zafather | Bot API | MTProto layer | Status |
 |---|---:|---:|---|
-| 0.5.0 | 10.3 | 229 | Current |
+| 0.6.0 | 10.4 | 229 | Current |
+| 0.5.0 | 10.3 | 229 | Previous |
 | 0.4.2 | 10.2 | experimental | Released |
 | 0.4.1 | 10.2 | — | Released |
+
+## Widgets in 10.4
+
+Widget methods, models, routing and validation are covered in [Widgets](widgets.md).
+Production supports private bot chats; groups, inline and forwards use the test server.
+Other new 10.4 methods remain available through the dynamic Bot API proxy.
 
 ## Rules for 10.3
 

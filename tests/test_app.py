@@ -203,6 +203,7 @@ async def test_webhook_mode_sets_and_serves(session: FakeSession, unused_tcp_por
     )
     assert texts(session) == ["got it"]
     assert session.calls("deleteWebhook")
+    assert {"widget_query", "shared_widget_query"} <= set(set_webhook["allowed_updates"])
 
 
 def test_invalid_secret_token_is_rejected(app: Zafather) -> None:

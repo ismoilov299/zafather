@@ -2,11 +2,11 @@
 RU: Zafather — лёгкий async-фреймворк для Telegram-ботов и userbot.
 EN: Zafather — a lightweight async framework for Telegram bots and userbots.
 
-UZ: Bot API **10.3** imkoniyatlari: rangli tugmalar, premium emoji, bot yaratadigan
+UZ: Bot API **10.4** imkoniyatlari: rangli tugmalar, premium emoji, bot yaratadigan
 botlar, ephemeral xabarlar, guest mode, reaksiyalar, obunalar, rich xabarlar.
-RU: Возможности Bot API **10.3**: цветные кнопки, premium emoji, боты, создающие
+RU: Возможности Bot API **10.4**: цветные кнопки, premium emoji, боты, создающие
 ботов, ephemeral-сообщения, guest mode, реакции, подписки, rich-сообщения.
-EN: Bot API **10.3** features: colored buttons, premium emoji, bots that create bots,
+EN: Bot API **10.4** features: colored buttons, premium emoji, bots that create bots,
 ephemeral messages, guest mode, reactions, subscriptions and rich messages.
 
 ::
@@ -23,7 +23,7 @@ ephemeral messages, guest mode, reactions, subscriptions and rich messages.
     app.run()
 """
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 __author__ = "ismoilov299"
 __license__ = "MIT"
 
@@ -126,15 +126,25 @@ from .types import (
     CallbackQuery,
     Chat,
     ChatBoostUpdated,
+    ExternalReplyInfo,
     InlineQuery,
     ManagedBotUpdated,
     Message,
     MessageGenerationStopped,
     MessageReactionUpdated,
     PreCheckoutQuery,
+    SharedWidgetQuery,
     TelegramObject,
+    TonWalletCard,
     Update,
     User,
+    Widget,
+    WidgetQuery,
+    WidgetQueryType,
+    WidgetQueryTypeData,
+    WidgetQueryTypeSentTransaction,
+    WidgetQueryTypeSignData,
+    WidgetQueryWallet,
 )
 from .userbot import UserBot
 from .webapp import (
@@ -152,6 +162,7 @@ from .webapp import (
 )
 from .webhook import WebhookServer
 from .webserver import MiniAppServer
+from .widgets import InputSharedWidgetMessageContent, InputWidgetMessageContent, widget_size
 
 __bot_api__ = BOT_API_VERSION
 
@@ -187,6 +198,7 @@ __all__ = [
     "EventBuilder",
     "Events",
     "ExceptionTypeFilter",
+    "ExternalReplyInfo",
     "F",
     "FSMContext",
     "FSMStrategy",
@@ -198,6 +210,8 @@ __all__ = [
     "InlineKeyboard",
     "InlineQuery",
     "InputFile",
+    "InputSharedWidgetMessageContent",
+    "InputWidgetMessageContent",
     "Invoice",
     "IsGroup",
     "IsPrivate",
@@ -233,6 +247,7 @@ __all__ = [
     "SafeHTML",
     "ServerError",
     "Service",
+    "SharedWidgetQuery",
     "SkipHandler",
     "StarsAPI",
     "State",
@@ -246,6 +261,7 @@ __all__ = [
     "Text",
     "TextBuilder",
     "ThrottlingMiddleware",
+    "TonWalletCard",
     "Unauthorized",
     "Update",
     "UpdateType",
@@ -256,6 +272,13 @@ __all__ = [
     "WebAppData",
     "WebAppInitData",
     "WebhookServer",
+    "Widget",
+    "WidgetQuery",
+    "WidgetQueryType",
+    "WidgetQueryTypeData",
+    "WidgetQueryTypeSentTransaction",
+    "WidgetQueryTypeSignData",
+    "WidgetQueryWallet",
     "Zafather",
     "ZafatherError",
     "__bot_api__",
@@ -282,4 +305,5 @@ __all__ = [
     "underline",
     "validate",
     "validate_third_party",
+    "widget_size",
 ]

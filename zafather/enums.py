@@ -1,6 +1,6 @@
-"""UZ: Zafather — Bot API 10.3 konstantalari.
-RU: Zafather — константы Bot API 10.3.
-EN: Zafather — Bot API 10.3 constants.
+"""UZ: Zafather — Bot API 10.4 konstantalari.
+RU: Zafather — константы Bot API 10.4.
+EN: Zafather — Bot API 10.4 constants.
 """
 
 from __future__ import annotations
@@ -34,9 +34,9 @@ class ParseMode:
 
 
 class UpdateType:
-    """UZ: Bot API 10.3 dagi barcha update turlari.
-    RU: Все типы update из Bot API 10.3.
-    EN: All update types from Bot API 10.3.
+    """UZ: Bot API 10.4 dagi barcha update turlari.
+    RU: Все типы update из Bot API 10.4.
+    EN: All update types from Bot API 10.4.
     """
 
     MESSAGE = "message"
@@ -52,6 +52,8 @@ class UpdateType:
     INLINE_QUERY = "inline_query"
     CHOSEN_INLINE_RESULT = "chosen_inline_result"
     CALLBACK_QUERY = "callback_query"
+    WIDGET_QUERY = "widget_query"
+    SHARED_WIDGET_QUERY = "shared_widget_query"
     SHIPPING_QUERY = "shipping_query"
     PRE_CHECKOUT_QUERY = "pre_checkout_query"
     PURCHASED_PAID_MEDIA = "purchased_paid_media"
@@ -88,6 +90,8 @@ class UpdateType:
         INLINE_QUERY,
         CHOSEN_INLINE_RESULT,
         CALLBACK_QUERY,
+        WIDGET_QUERY,
+        SHARED_WIDGET_QUERY,
         SHIPPING_QUERY,
         PRE_CHECKOUT_QUERY,
         PURCHASED_PAID_MEDIA,
@@ -135,6 +139,7 @@ class ContentType:
     LIVE_PHOTO = "live_photo"  # 10.0
     CHECKLIST = "checklist"  # 9.1
     RICH_MESSAGE = "rich_message"  # 10.1
+    WIDGET = "widget"
     GIFT = "gift"  # 9.0
     UNIQUE_GIFT = "unique_gift"  # 9.0
     NEW_CHAT_MEMBERS = "new_chat_members"
@@ -221,4 +226,4 @@ class PollType:
 #: UZ: Ushbu framework mos keladigan Bot API versiyasi.
 #: RU: Версия Bot API, которую поддерживает этот фреймворк.
 #: EN: Bot API version supported by this framework.
-BOT_API_VERSION = "10.3"
+BOT_API_VERSION = "10.4"

@@ -15,7 +15,7 @@ import pytest
 
 import zafather.bot
 from tests.support import FakeSession, callback_update, message, message_update
-from zafather import Update
+from zafather import Update, widget_size
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
@@ -132,3 +132,30 @@ async def test_miniapp_bot(session: FakeSession) -> None:
     assert texts(session)[-1] == "Ilovadan keldi: <code>{'a': 1}</code>"
     paths = {resource.canonical for resource in module.server.web.router.resources()}
     assert paths >= {"/api/me", "/api/click", "/api/notify"}
+
+
+async def test_widget_bot(session: FakeSession) -> None:
+    module = load("widget_bot.py")
+    session.respond("sendWidget", message(None, message_id=77, widget={"html": module.HTML}))
+    await feed(module, message_update("/start"))
+    sent = session.last("sendWidget").params
+    assert sent["allow_queries"] is True and sent["chat_data"] == '{"n":0}'
+    assert widget_size(module.HTML)[1] < 4096
+    query = {
+        "id": "q1",
+        "from": {"id": 1, "is_bot": False, "first_name": "Ali"},
+        "chat": {"id": 1, "type": "private"},
+        "message_id": 77,
+        "chat_instance": "ci",
+        "type": {"type": "data"},
+        "data": "inc",
+    }
+    await feed(module, {"update_id": 2, "widget_query": query})
+    assert session.last("editMessageWidgetData").params["chat_data"] == '{"n":1}'
+    assert session.last("answerWidgetQuery").params["data"] == '{"n":1}'
+    await feed(module, {"update_id": 3, "widget_query": {**query, "data": "bad"}})
+    assert "Unknown widget" in session.last("answerWidgetQuery").params["data"]
+    session.fail("editMessageWidgetData", 400, "Bad Request: failed")
+    await feed(module, {"update_id": 4, "widget_query": query})
+    assert module.counters[(1, 77)] == 1
+    assert "Update failed" in session.last("answerWidgetQuery").params["data"]
