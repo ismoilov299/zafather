@@ -6,6 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versiyalash: [SemVer](h
 
 ## [0.6.0]
 
+### Tuzatildi
+- MTProto: `getDifference` davomida aniqlangan yangi `pts` bo'shlig'i navbatdagi
+  olishni rejalashtiradi; tez keladigan userbot buyruqlari yo'qolib qolmaydi.
+
 ### Qo'shildi
 - Bot API 10.4 widgetlari: `send_widget`, `send_shared_widget`,
   `answer_widget_query`, `edit_message_widget_data`, `edit_shared_widget_data`.

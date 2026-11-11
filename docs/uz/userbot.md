@@ -78,6 +78,8 @@ chiqarmaydi, shuning uchun handler o'zini o'zi qo'zg'atmaydi.
 
 O'tkazib yuborilgan update'lar avtomatik olinadi: `pts` bo'shlig'i topilganda,
 qayta ulangandan keyin va `start(catch_up=True)` bilan oflayn paytdagilari ham.
+`getDifference` davomida yangi bo'shliq aniqlansa, yana olish navbatga qo'yiladi;
+bu tiklangan xabar handleri ishlayotgan paytdagi bo'shliqlarga ham tegishli.
 
 ## Xabar yuborish va xom so'rovlar
 

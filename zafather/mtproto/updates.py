@@ -111,6 +111,7 @@ class UpdateProcessor:
         self.state = state or UpdateState()
         self._catch_up_lock = asyncio.Lock()
         self._gap_task: asyncio.Task[None] | None = None
+        self._catch_up_requested = False
 
     async def initialize(self) -> None:
         """UZ: Server holatini oladi (update'lar shundan keyin keladi).
@@ -190,23 +191,27 @@ class UpdateProcessor:
         RU: Через `gap_timeout` догружает пропущенные update (не блокирует).
         EN: Fetches missed updates after `gap_timeout` without blocking.
         """
+        self._catch_up_requested = True
         if self._gap_task is None or self._gap_task.done():
             self._gap_task = asyncio.ensure_future(self._delayed_catch_up())
 
     async def _delayed_catch_up(self) -> None:
-        await asyncio.sleep(self.gap_timeout)
-        try:
-            await self.catch_up()
-        except asyncio.CancelledError:
-            raise
-        except Exception:
-            log.exception("Fetching missed updates failed")
+        while self._catch_up_requested:
+            await asyncio.sleep(self.gap_timeout)
+            self._catch_up_requested = False
+            try:
+                await self.catch_up()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                log.exception("Fetching missed updates failed")
 
     async def close(self) -> None:
         """UZ: Rejalashtirilgan `getDifference` ni bekor qiladi.
         RU: Отменяет запланированный `getDifference`.
         EN: Cancels a scheduled `getDifference`.
         """
+        self._catch_up_requested = False
         if self._gap_task is not None:
             self._gap_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):

@@ -126,6 +126,53 @@ async def test_gap_triggers_difference_after_timeout() -> None:
     await processor.close()
 
 
+async def test_gap_during_catch_up_schedules_another_difference() -> None:
+    recorder = Recorder(
+        [
+            types.updates.difference(
+                new_messages=[message("first")],
+                new_encrypted_messages=[],
+                other_updates=[],
+                chats=[],
+                users=[],
+                state=types.updates.state(pts=11, qts=0, date=1, seq=0, unread_count=0),
+            ),
+            types.updates.difference(
+                new_messages=[message("second")],
+                new_encrypted_messages=[],
+                other_updates=[],
+                chats=[],
+                users=[],
+                state=types.updates.state(pts=13, qts=0, date=1, seq=0, unread_count=0),
+            ),
+        ]
+    )
+    processor = recorder.processor(pts=10)
+    finished = asyncio.Event()
+
+    async def emit(update: TLObject) -> None:
+        recorder.emitted.append(update)
+        if update.message.message == "first":
+            await processor.feed(
+                types.updateShort(
+                    update=types.updateNewMessage(message=message("second"), pts=13, pts_count=1),
+                    date=0,
+                )
+            )
+        else:
+            finished.set()
+
+    processor._emit = emit
+    try:
+        processor.request_catch_up()
+        await asyncio.wait_for(finished.wait(), timeout=1)
+        assert [update.message.message for update in recorder.emitted] == ["first", "second"]
+        assert [request.pts for request in recorder.invoked] == [10, 11]
+        assert processor.state.pts == 13
+    finally:
+        await processor.close()
+
+
 async def test_difference_slices_and_too_long() -> None:
     state = types.updates.state(pts=15, qts=0, date=0, seq=0, unread_count=0)
     slice_ = types.updates.differenceSlice(

@@ -78,6 +78,8 @@ update the state but do not fire events, so a handler cannot trigger itself.
 
 Missed updates are fetched automatically: when a `pts` gap is detected, after a
 reconnect, and, with `start(catch_up=True)`, those missed while offline.
+If a new gap appears while `getDifference` is running, another catch-up pass is
+queued, including gaps detected while recovered-message handlers run.
 
 ## Sending messages and raw requests
 
